@@ -1,5 +1,7 @@
 package de.borisskert.springjpaliquibase;
 
+import de.borisskert.springjpaliquibase.persistence.UserEntity;
+import de.borisskert.springjpaliquibase.persistence.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,18 +23,22 @@ public class UserService {
     }
 
     public Optional<User> getUserById(@PathVariable String id) {
-        return repository.getById(id);
+        return repository.findById(id)
+                .map(User::fromEntity);
     }
 
     public Optional<User> findByUsername(@RequestParam String username) {
-        return repository.findByUsername(username);
+        return repository.findOneByUsername(username)
+                .map(User::fromEntity);
     }
 
     public String create(@RequestBody @Valid User user) {
         throwIfUsernameExists(user.getUsername());
 
         String id = createNewId();
-        repository.save(id, user);
+        UserEntity entity = user.toEntityWithId(id);
+
+        repository.save(entity);
 
         return id;
     }
@@ -41,7 +47,9 @@ public class UserService {
         throwIfIdExists(id);
         throwIfUsernameExists(user.getUsername());
 
-        repository.save(id, user);
+        UserEntity entity = user.toEntityWithId(id);
+
+        repository.save(entity);
     }
 
     private String createNewId() {
@@ -49,13 +57,13 @@ public class UserService {
     }
 
     private void throwIfIdExists(String id) {
-        if (repository.getById(id).isPresent()) {
+        if (repository.findById(id).isPresent()) {
             throw new UsernameAlreadyExistsException("Id '" + id + "' already exists");
         }
     }
 
     private void throwIfUsernameExists(String username) {
-        if (repository.findByUsername(username).isPresent()) {
+        if (repository.findOneByUsername(username).isPresent()) {
             throw new UsernameAlreadyExistsException("Username '" + username + "' already exists");
         }
     }

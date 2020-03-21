@@ -1,11 +1,14 @@
 package de.borisskert.springjpaliquibase;
 
+import de.borisskert.springjpaliquibase.persistence.UserEntity;
+
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 public class User {
 
@@ -20,7 +23,7 @@ public class User {
     @Past
     private final LocalDate dateOfBirth;
 
-    public User(
+    User(
             String username,
             String email,
             LocalDate dateOfBirth
@@ -40,6 +43,35 @@ public class User {
 
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
+    }
+
+    public static User fromEntity(UserEntity entity) {
+        return new User(
+                entity.getUsername(),
+                entity.getEmail(),
+                entity.getDateOfBirth()
+        );
+    }
+
+    public UserEntity toEntity() {
+        UserEntity entity = new UserEntity();
+
+        entity.setUsername(username);
+        entity.setEmail(email);
+        entity.setDateOfBirth(dateOfBirth);
+
+        return entity;
+    }
+
+    public UserEntity toEntityWithId(String id) {
+        UserEntity entity = new UserEntity();
+
+        entity.setId(id);
+        entity.setUsername(username);
+        entity.setEmail(email);
+        entity.setDateOfBirth(dateOfBirth);
+
+        return entity;
     }
 
     @Override

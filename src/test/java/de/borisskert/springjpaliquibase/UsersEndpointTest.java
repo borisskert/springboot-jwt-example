@@ -14,7 +14,13 @@ import org.springframework.http.ResponseEntity;
 import java.time.LocalDate;
 import java.util.Optional;
 
-import static de.borisskert.springjpaliquibase.MockUsers.*;
+import static de.borisskert.springjpaliquibase.MockUsers.NOT_EXISTING_ID;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_ID_TO_INSERT;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_ONE;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_ONE_ID;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_TO_CREATE;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_TO_INSERT;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_WITH_DUPLICATE_USERNAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -22,7 +28,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UsersEndpointTest {
@@ -62,13 +72,6 @@ class UsersEndpointTest {
             ResponseEntity<User> response = restTemplate.getForEntity("/api/users/" + NOT_EXISTING_ID, User.class);
 
             assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
-        }
-
-        @Test
-        public void shouldNotAcceptEmptyId() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users/", User.class);
-
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
     }
 

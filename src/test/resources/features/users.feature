@@ -52,3 +52,13 @@ Feature: User functionalities
       | Username   | Email                      | Day of Birth   | ID                                   |
       | ashley     | ashley@fakemail.com        | 1962-07-08     | 1ed47a5f-2793-41f8-ba1c-4a0f5c7e7c77 |
     Then I get a Conflict response
+
+  Scenario: Get all users
+    When I ask for all users
+    Then I should get following users
+      | Username   | Email                      | Day of Birth   |
+      | ashley     | ashley@fakemail.com        | 1962-07-08     |
+      | mincui     | mincui@fakemail.com        | 1948-06-21     |
+      | mustermann | max.musterman@fakemail.com | 1945-05-08     |
+      | paulN      | paul.noob@fakemail.com     | 1948-06-21     |
+      | smithj     | john.smith@fakemail.com    | 1990-10-03     |

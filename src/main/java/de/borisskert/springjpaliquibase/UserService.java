@@ -9,8 +9,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.Valid;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -20,6 +23,13 @@ public class UserService {
     @Autowired
     public UserService(UserRepository repository) {
         this.repository = repository;
+    }
+
+    public Collection<User> getAllUsers() {
+        List<UserEntity> entities = repository.findAll();
+        return entities.stream()
+                .map(User::fromEntity)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     public Optional<User> getUserById(@PathVariable String id) {

@@ -12,6 +12,7 @@ import io.cucumber.java.en.When;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -88,5 +89,15 @@ public class UsersSteps {
     @DataTableType
     public UserWithId defineUserWithId(Map<String, String> entry) {
         return UserWithId.from(entry);
+    }
+
+    @When("I ask for all users")
+    public void iAskForAllUsers() {
+        usersClient.getAll();
+    }
+
+    @Then("I should get following users")
+    public void iShouldGetFollowingUsers(List<User> dataTable) {
+        usersClient.usersHasBeenRetrieved(dataTable);
     }
 }

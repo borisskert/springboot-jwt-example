@@ -7,10 +7,15 @@ import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Scope;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,7 +65,7 @@ public class CucumberHttpClient {
         request(HttpMethod.PUT, url, body, urlVariables);
     }
 
-    public <T> void verifyLatestBody(List<T> expectedBody, TypeReference<List<T>> type) {
+    public <T extends Comparable<T>> void verifyLatestBody(List<T> expectedBody, TypeReference<List<T>> type) {
         Optional<ResponseEntity<String>> maybeResponse = getLastResponse();
 
         if (maybeResponse.isPresent()) {
@@ -68,6 +73,7 @@ public class CucumberHttpClient {
             String body = response.getBody();
 
             List<T> convertedBody = tryToConvertFromJson(body, type);
+            Collections.sort(convertedBody);
 
             assertThat(convertedBody, is(equalTo(expectedBody)));
         } else {

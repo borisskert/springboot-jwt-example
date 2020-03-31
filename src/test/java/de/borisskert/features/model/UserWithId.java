@@ -1,8 +1,14 @@
 package de.borisskert.features.model;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.List;
 import java.util.Map;
 
 public class UserWithId {
+    public static final TypeReference<List<UserWithId>> LIST_TYPE = new TypeReference<>() {
+    };
+
     public final String id;
     public final User user;
 

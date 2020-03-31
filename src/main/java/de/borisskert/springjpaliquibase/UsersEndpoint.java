@@ -1,5 +1,7 @@
 package de.borisskert.springjpaliquibase;
 
+import de.borisskert.springjpaliquibase.vaidation.Username;
+import de.borisskert.springjpaliquibase.vaidation.Uuid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -13,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Size;
 import java.net.URI;
 import java.util.Collection;
 
@@ -43,7 +44,7 @@ public class UsersEndpoint {
     }
 
     @GetMapping(params = "username")
-    public ResponseEntity<?> findByUsername(@RequestParam @Size(min = 6, max = 12) String username) {
+    public ResponseEntity<?> findByUsername(@RequestParam @Username String username) {
         return service.findByUsername(username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

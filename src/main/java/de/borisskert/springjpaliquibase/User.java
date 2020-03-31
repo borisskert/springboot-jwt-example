@@ -1,6 +1,7 @@
 package de.borisskert.springjpaliquibase;
 
 import de.borisskert.springjpaliquibase.persistence.UserEntity;
+import de.borisskert.springjpaliquibase.vaidation.Username;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
@@ -12,6 +13,7 @@ import java.util.Objects;
 public class User {
 
     @NotEmpty
+    @Username
     private final String username;
 
     @NotEmpty

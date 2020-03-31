@@ -126,6 +126,22 @@ class UsersEndpointTest {
         }
 
         @Test
+        public void shouldNotAllowUserWithTooShortUsername() throws Exception {
+            User userToCreate = new User("short", "my@fakemail.com", LocalDate.of(1944, 7, 20));
+
+            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithTooLongUsername() throws Exception {
+            User userToCreate = new User("tooooooo_long", "my@fakemail.com", LocalDate.of(1944, 7, 20));
+
+            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
         public void shouldNotAllowUserWithoutEmail() throws Exception {
             User userToCreate = new User("my_username", null, LocalDate.of(1944, 7, 20));
 

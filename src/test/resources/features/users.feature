@@ -29,10 +29,10 @@ Feature: User functionalities
   Scenario: Conflict when trying to create user with duplicate username
     Given A user exists with ID
       | Username   | Email                      | Day of Birth   | ID                                   |
-      | paulN      | paul.noob@fakemail.com     | 1948-06-21     | 2884a717-5a17-49fa-84cc-d4321207c7f9 |
+      | paulNo     | paul.noob@fakemail.com     | 1948-06-21     | 2884a717-5a17-49fa-84cc-d4321207c7f9 |
     When I create a user
       | Username   | Email                      | Day of Birth   |
-      | paulN      | paul.pro@fakemail.com      | 1948-06-21     |
+      | paulNo     | paul.pro@fakemail.com      | 1948-06-21     |
     Then I get a Conflict response
 
   Scenario: Conflict when trying to insert user with duplicate ID
@@ -60,5 +60,5 @@ Feature: User functionalities
       | ashley     | ashley@fakemail.com        | 1962-07-08     |
       | mincui     | mincui@fakemail.com        | 1948-06-21     |
       | mustermann | max.musterman@fakemail.com | 1945-05-08     |
-      | paulN      | paul.noob@fakemail.com     | 1948-06-21     |
+      | paulNo     | paul.noob@fakemail.com     | 1948-06-21     |
       | smithj     | john.smith@fakemail.com    | 1990-10-03     |

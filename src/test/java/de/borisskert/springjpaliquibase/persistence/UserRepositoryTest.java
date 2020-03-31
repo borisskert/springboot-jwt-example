@@ -37,8 +37,8 @@ class UserRepositoryTest {
 
         UserEntity entityToSave = new UserEntity();
         entityToSave.setId(id);
-        entityToSave.setUsername("my_username");
-        entityToSave.setEmail("my@fakemail.com");
+        entityToSave.setUsername("The3aep1");
+        entityToSave.setEmail("The3aep1@fakemail.com");
         entityToSave.setDateOfBirth(LocalDate.of(1987, 11, 15));
 
         repository.save(entityToSave);
@@ -48,8 +48,8 @@ class UserRepositoryTest {
 
         UserEntity existingEntity = maybe.get();
         assertThat(existingEntity.getId(), is(equalTo(id)));
-        assertThat(existingEntity.getUsername(), is(equalTo("my_username")));
-        assertThat(existingEntity.getEmail(), is(equalTo("my@fakemail.com")));
+        assertThat(existingEntity.getUsername(), is(equalTo("The3aep1")));
+        assertThat(existingEntity.getEmail(), is(equalTo("The3aep1@fakemail.com")));
         assertThat(existingEntity.getDateOfBirth(), is(equalTo(LocalDate.of(1987, 11, 15))));
     }
 

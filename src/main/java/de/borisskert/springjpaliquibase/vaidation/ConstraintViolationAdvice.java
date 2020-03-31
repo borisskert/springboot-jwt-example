@@ -1,4 +1,4 @@
-package de.borisskert.springjpaliquibase;
+package de.borisskert.springjpaliquibase.vaidation;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;

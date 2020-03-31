@@ -9,7 +9,7 @@ public class MockUsers {
     public static final User USER_TO_CREATE = new User("created_user", "my_other@fakemail.com", LocalDate.of(1945, 5, 8));
 
     public static final String USER_ID_TO_INSERT = "2884a717-5a17-49fa-84cc-d4321207c7f9";
-    public static final User USER_TO_INSERT = new User("user_to_insert", "user_to_insert@fakemail.com", LocalDate.of(1948, 6, 21));
+    public static final User USER_TO_INSERT = new User("user_insert", "user_to_insert@fakemail.com", LocalDate.of(1948, 6, 21));
 
     public static final String NOT_EXISTING_ID = "9b686071-2973-4001-b0f9-6267422d45f7";
 

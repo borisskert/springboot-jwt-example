@@ -56,7 +56,7 @@ class UserRepositoryTest {
     @Test
     public void shouldNotPersistUserWithoutId() throws Exception {
         UserEntity entityToSave = new UserEntity();
-        entityToSave.setUsername("my_username");
+        entityToSave.setUsername("Dio1Feep");
         entityToSave.setEmail("my@fakemail.com");
         entityToSave.setDateOfBirth(LocalDate.of(1987, 11, 15));
 

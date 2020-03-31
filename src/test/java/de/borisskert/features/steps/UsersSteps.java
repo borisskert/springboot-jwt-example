@@ -2,6 +2,7 @@ package de.borisskert.features.steps;
 
 import de.borisskert.features.model.User;
 import de.borisskert.features.model.UserWithId;
+import de.borisskert.features.model.UserWithPassword;
 import de.borisskert.features.world.UsersClient;
 import io.cucumber.java.Before;
 import io.cucumber.java.DataTableType;
@@ -91,6 +92,11 @@ public class UsersSteps {
         return UserWithId.from(entry);
     }
 
+    @DataTableType
+    public UserWithPassword defineUserWithPassword(Map<String, String> entry) {
+        return UserWithPassword.from(entry);
+    }
+
     @When("I ask for all users")
     public void iAskForAllUsers() {
         usersClient.getAll();
@@ -99,5 +105,15 @@ public class UsersSteps {
     @Then("I should get following users")
     public void iShouldGetFollowingUsers(List<User> dataTable) {
         usersClient.usersHasBeenRetrieved(dataTable);
+    }
+
+    @When("I sign up as user")
+    public void iSignUpAsUser(UserWithPassword dataTable) {
+        usersClient.signUp(dataTable);
+    }
+
+    @And("I get the user location after sign-up")
+    public void iGetTheUserLocationAfterSignUp() {
+        usersClient.userHasBeenCreated();
     }
 }

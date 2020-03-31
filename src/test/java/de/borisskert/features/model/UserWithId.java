@@ -12,7 +12,7 @@ public class UserWithId {
     public final String id;
     public final User user;
 
-    public UserWithId(String id, User user) {
+    private UserWithId(String id, User user) {
         this.id = id;
         this.user = user;
     }

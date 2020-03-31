@@ -24,7 +24,7 @@ public class User {
     @Past
     private final LocalDate dateOfBirth;
 
-    User(
+    private User(
             String username,
             String email,
             LocalDate dateOfBirth
@@ -52,6 +52,22 @@ public class User {
                 entity.getEmail(),
                 entity.getDateOfBirth()
         );
+    }
+
+    public static User from(
+            String username,
+            String email,
+            LocalDate dateOfBirth
+    ) {
+        return new User(
+                username,
+                email,
+                dateOfBirth
+        );
+    }
+
+    public UserWithPassword withPassword(String rawPassword) {
+        return UserWithPassword.from(this, rawPassword);
     }
 
     public UserEntity toEntity() {

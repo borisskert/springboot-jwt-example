@@ -27,6 +27,8 @@ public class UserEntity {
     @Past
     private LocalDate dateOfBirth;
 
+    private String password;
+
     public String getId() {
         return id;
     }
@@ -57,5 +59,13 @@ public class UserEntity {
 
     public void setDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

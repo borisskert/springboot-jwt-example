@@ -62,3 +62,19 @@ Feature: User functionalities
       | mustermann | max.musterman@fakemail.com | 1945-05-08     |
       | paulNo     | paul.noob@fakemail.com     | 1948-06-21     |
       | smithj     | john.smith@fakemail.com    | 1990-10-03     |
+
+  Scenario: Sign up
+    When I sign up as user
+      | Username   | Email                      | Day of Birth   | Password    |
+      | Buu1eeVu   | Buu1eeVu@fakemail.com      | 1989-10-18     | my_p@ssw0rd |
+    And I get the user location after sign-up
+    And I ask for the user by location
+    Then The location should get following user
+      | Username   | Email                      | Day of Birth   |
+      | Buu1eeVu   | Buu1eeVu@fakemail.com      | 1989-10-18     |
+
+  Scenario: Try to sign up second time
+    When I sign up as user
+      | Username   | Email                      | Day of Birth   | Password    |
+      | Buu1eeVu   | Buu1eeVu@fakemail.com      | 1989-10-18     | my_p@ssw0rd |
+    Then I get a Conflict response

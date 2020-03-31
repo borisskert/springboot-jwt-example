@@ -13,7 +13,7 @@ class UserTest {
 
     @Test
     public void shouldConvertToEntity() throws Exception {
-        User user = new User("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
+        User user = User.from("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
 
         UserEntity entity = user.toEntity();
 
@@ -24,7 +24,7 @@ class UserTest {
 
     @Test
     public void shouldConvertToEntityWithId() throws Exception {
-        User user = new User("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
+        User user = User.from("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
 
         UserEntity entity = user.toEntityWithId("my_id");
 
@@ -46,5 +46,15 @@ class UserTest {
         assertThat(user.getUsername(), is(equalTo("my_username")));
         assertThat(user.getEmail(), is(equalTo("mail@fakemail.com")));
         assertThat(user.getDateOfBirth(), is(equalTo(LocalDate.of(1984, 5, 31))));
+    }
+
+    @Test
+    public void shouldTransferToUserWithPassword() throws Exception {
+        User user = User.from("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
+
+        UserWithPassword userWithPassword = user.withPassword("my password");
+
+        assertThat(userWithPassword.getUser(), is(equalTo(user)));
+        assertThat(userWithPassword.getRawPassword(), is(equalTo("my password")));
     }
 }

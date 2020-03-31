@@ -10,6 +10,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -20,7 +21,10 @@ import static de.borisskert.springjpaliquibase.MockUsers.USER_ONE;
 import static de.borisskert.springjpaliquibase.MockUsers.USER_ONE_ID;
 import static de.borisskert.springjpaliquibase.MockUsers.USER_TO_CREATE;
 import static de.borisskert.springjpaliquibase.MockUsers.USER_TO_INSERT;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_TO_SIGN_UP;
+import static de.borisskert.springjpaliquibase.MockUsers.USER_TO_SIGN_UP_WITH_DUPLICATE_USERNAME;
 import static de.borisskert.springjpaliquibase.MockUsers.USER_WITH_DUPLICATE_USERNAME;
+import static de.borisskert.springjpaliquibase.MockUsers.VALID_PASSWORD;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -35,7 +39,12 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DirtiesContext
 class UsersEndpointTest {
+
+    private static final String CREATED_USER_ID = "777";
+    private static final String SIGN_UP_USER_ID = "555";
+    private static final String API_USERS_URL = "/api/users";
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -50,11 +59,16 @@ class UsersEndpointTest {
 
         when(userService.getUserById(NOT_EXISTING_ID)).thenReturn(Optional.empty());
 
-        when(userService.create(USER_TO_CREATE)).thenReturn("777");
+        when(userService.create(USER_TO_CREATE)).thenReturn(CREATED_USER_ID);
 
         when(userService.create(eq(USER_WITH_DUPLICATE_USERNAME))).thenThrow(new UsernameAlreadyExistsException("Username 'duplicate' already exists"));
         doThrow(new UsernameAlreadyExistsException("Username 'duplicate' already exists"))
                 .when(userService).insert(any(), eq(USER_WITH_DUPLICATE_USERNAME));
+
+        when(userService.signUp(USER_TO_SIGN_UP)).thenReturn(SIGN_UP_USER_ID);
+        when(userService.signUp(eq(USER_TO_SIGN_UP_WITH_DUPLICATE_USERNAME))).thenThrow(
+                new UsernameAlreadyExistsException("Username 'duplicate' already exists")
+        );
     }
 
     @Nested
@@ -111,7 +125,7 @@ class UsersEndpointTest {
     class Post {
         @Test
         public void shouldCreateUser() throws Exception {
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", USER_TO_CREATE, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, USER_TO_CREATE, Void.class);
 
             assertThat(response.getStatusCode(), is(equalTo(CREATED)));
             assertThat(response.getHeaders().get("Location").get(0), is(equalTo("/api/users/777")));
@@ -119,63 +133,63 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotAllowUserWithoutUsername() throws Exception {
-            User userToCreate = new User(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithTooShortUsername() throws Exception {
-            User userToCreate = new User("short", "my@fakemail.com", LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from("short", "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithTooLongUsername() throws Exception {
-            User userToCreate = new User("tooooooo_long", "my@fakemail.com", LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from("tooooooo_long", "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithoutEmail() throws Exception {
-            User userToCreate = new User("my_username", null, LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from("my_username", null, LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithIllegalEmail() throws Exception {
-            User userToCreate = new User("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithoutBirthDate() throws Exception {
-            User userToCreate = new User("my_username", "my@fakemail.com", null);
+            User userToCreate = User.from("my_username", "my@fakemail.com", null);
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
-            User userToCreate = new User("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
+            User userToCreate = User.from("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", userToCreate, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
-            ResponseEntity<Void> response = restTemplate.postForEntity("/api/users", USER_WITH_DUPLICATE_USERNAME, Void.class);
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, USER_WITH_DUPLICATE_USERNAME, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
         }
     }
@@ -185,7 +199,7 @@ class UsersEndpointTest {
         @Test
         public void shouldInsertUser() throws Exception {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(USER_TO_INSERT),
                     Void.class
@@ -197,7 +211,7 @@ class UsersEndpointTest {
         @Test
         public void shouldNotAllowToInsertUserWithIllegalId() throws Exception {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/444",
+                    API_USERS_URL + "/444",
                     HttpMethod.PUT,
                     new HttpEntity<>(USER_TO_INSERT),
                     Void.class
@@ -208,10 +222,10 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotAllowUserWithoutUsername() throws Exception {
-            User userToCreate = new User(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(userToCreate),
                     Void.class
@@ -222,10 +236,10 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotAllowUserWithoutEmail() throws Exception {
-            User userToCreate = new User("my_username", null, LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from("my_username", null, LocalDate.of(1944, 7, 20));
 
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(userToCreate),
                     Void.class
@@ -236,10 +250,10 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotAllowUserWithIllegalEmail() throws Exception {
-            User userToCreate = new User("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
+            User userToCreate = User.from("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
 
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(userToCreate),
                     Void.class
@@ -250,10 +264,10 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotAllowUserWithoutBirthDate() throws Exception {
-            User userToCreate = new User("my_username", "my@fakemail.com", null);
+            User userToCreate = User.from("my_username", "my@fakemail.com", null);
 
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(userToCreate),
                     Void.class
@@ -264,10 +278,10 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
-            User userToCreate = new User("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
+            User userToCreate = User.from("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
 
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(userToCreate),
                     Void.class
@@ -279,12 +293,145 @@ class UsersEndpointTest {
         @Test
         public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "/api/users/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
                     new HttpEntity<>(USER_WITH_DUPLICATE_USERNAME),
                     Void.class
             );
 
+            assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+        }
+    }
+
+    @Nested
+    class SignUp {
+        private static final String API_USERS_SIGN_UP_URL = "/api/users/sign-up";
+
+        @Test
+        public void shouldSignUpNewUser() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_SIGN_UP, Void.class);
+
+            assertThat(response.getStatusCode(), is(equalTo(CREATED)));
+            assertThat(response.getHeaders().get("Location").get(0), is(equalTo("/api/users/" + SIGN_UP_USER_ID)));
+        }
+
+        @Test
+        public void shouldNotAllowToSignUpNewUserWithoutPassword() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_CREATE, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowToSignUpNewUserWithTooShortPassword() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_CREATE.withPassword("@bc123"), Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowToSignUpNewUserWithPasswordWithoutDigits() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_CREATE.withPassword("@bcdefgh"), Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowToSignUpNewUserWithPasswordWithoutLetters() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_CREATE.withPassword("@2345678"), Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowToSignUpNewUserWithPasswordWithoutSpecialCharacters() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_CREATE.withPassword("a2345678"), Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithoutUsername() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    null,
+                    "my@fakemail.com",
+                    LocalDate.of(1944, 7, 20)
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithTooShortUsername() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    "short",
+                    "my@fakemail.com",
+                    LocalDate.of(1944, 7, 20)
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithTooLongUsername() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    "tooooooo_long",
+                    "my@fakemail.com",
+                    LocalDate.of(1944, 7, 20)
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithoutEmail() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    "my_username",
+                    null,
+                    LocalDate.of(1944, 7, 20)
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithIllegalEmail() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    "my_username",
+                    "not_a_email",
+                    LocalDate.of(1944, 7, 20)
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithoutBirthDate() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    "my_username",
+                    "my@fakemail.com",
+                    null
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
+            UserWithPassword userToSignUp = User.from(
+                    "my_username",
+                    "my@fakemail.com",
+                    LocalDate.now().plusYears(1)
+            ).withPassword(VALID_PASSWORD);
+
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
+            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
+            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_SIGN_UP_WITH_DUPLICATE_USERNAME, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
         }
     }

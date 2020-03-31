@@ -62,4 +62,12 @@ public class UsersEndpoint {
     public void insert(@PathVariable @Uuid String id, @RequestBody @Valid User user) {
         service.insert(id, user);
     }
+
+    @PostMapping("/sign-up")
+    public ResponseEntity<?> signUp(@RequestBody @Valid UserWithPassword newUserWithPassword) {
+        String createdId = service.signUp(newUserWithPassword);
+
+        return ResponseEntity.created(URI.create("/api/users/" + createdId))
+                .build();
+    }
 }

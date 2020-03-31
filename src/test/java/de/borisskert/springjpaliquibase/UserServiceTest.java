@@ -56,4 +56,20 @@ class UserServiceTest {
         assertThat(actual, is(equalTo(user)));
         assertThat(actual, is(not(sameInstance(user))));
     }
+
+    @Test
+    public void shouldSignUpUser() throws Exception {
+        UserWithPassword userWithPassword = MockUsers.USER_TO_SIGN_UP;
+
+        String id = service.signUp(userWithPassword);
+        boolean isPasswordCorrect = service.isPasswordCorrect(userWithPassword.getUsername(), userWithPassword.getRawPassword());
+
+        Optional<User> maybe = service.getUserById(id);
+
+        assertThat(maybe.isPresent(), is(equalTo(true)));
+
+        User actual = maybe.get();
+        assertThat(actual, is(equalTo(userWithPassword.getUser())));
+        assertThat(isPasswordCorrect, is(equalTo(true)));
+    }
 }

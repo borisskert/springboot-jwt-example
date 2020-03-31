@@ -3,6 +3,7 @@ package de.borisskert.springjpaliquibase;
 import de.borisskert.springjpaliquibase.persistence.UserEntity;
 import de.borisskert.springjpaliquibase.persistence.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,10 +20,12 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository repository) {
+    public UserService(UserRepository repository, PasswordEncoder passwordEncoder) {
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Collection<User> getAllUsers() {
@@ -60,6 +63,26 @@ public class UserService {
         UserEntity entity = user.toEntityWithId(id);
 
         repository.save(entity);
+    }
+
+    public String signUp(UserWithPassword user) {
+        throwIfUsernameExists(user.getUsername());
+
+        String id = createNewId();
+        UserEntity entity = user.toEntityWithId(id);
+
+        String encryptedPassword = passwordEncoder.encode(user.getRawPassword());
+        entity.setPassword(encryptedPassword);
+
+        repository.save(entity);
+
+        return id;
+    }
+
+    public boolean isPasswordCorrect(String username, String rawPassword) {
+        return repository.findPasswordFor(username)
+                .map(encryptedPassword -> passwordEncoder.matches(rawPassword, encryptedPassword))
+                .orElse(false);
     }
 
     private String createNewId() {

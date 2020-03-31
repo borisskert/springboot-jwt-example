@@ -2,6 +2,8 @@ package de.borisskert.features.world;
 
 import de.borisskert.features.model.User;
 import de.borisskert.features.model.UserWithId;
+import de.borisskert.features.model.UserWithPassword;
+import org.apiguardian.api.API;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -74,5 +76,9 @@ public class UsersClient {
         httpClient.get(API_USERS_URL);
         httpClient.verifyLatestStatus(OK);
         httpClient.verifyLatestBody(dataTable, User.LIST_TYPE);
+    }
+
+    public void signUp(UserWithPassword user) {
+        httpClient.post(API_USERS_URL  + "/sign-up", user);
     }
 }

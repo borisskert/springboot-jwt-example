@@ -1,6 +1,7 @@
 package de.borisskert.springjpaliquibase;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 public class MockUsers {
 
@@ -16,12 +17,19 @@ public class MockUsers {
     public static final User USER_WITH_DUPLICATE_USERNAME = User.from("duplicate", "my@fakemail.com", LocalDate.of(1962, 7, 8));
 
     public static final String VALID_PASSWORD = "my_p@ssw0rd";
-    public static final UserWithPassword USER_TO_SIGN_UP = UserWithPassword.from(
-            User.from("sign_up", "user_to_sign_up@fakemail.com", LocalDate.of(1943, 11, 29)),
-            VALID_PASSWORD
+
+    public static final UserToSignUp USER_TO_SIGN_UP = UserToSignUp.from(
+            "sign_up", "user_to_sign_up@fakemail.com", LocalDate.of(1943, 11, 29), VALID_PASSWORD
     );
-    public static final UserWithPassword USER_TO_SIGN_UP_WITH_DUPLICATE_USERNAME = UserWithPassword.from(
-            User.from("duplicate2", "user_to_sign_up_duplicate@fakemail.com", LocalDate.of(1943, 11, 29)),
-            VALID_PASSWORD
+
+    public static final Map<String, String> USER_TO_SIGN_UP_AS_MAP = Map.of(
+            "username", "sign_up2",
+            "email", "user_to_sign_up@fakemail.com",
+            "dateOfBirth", "1943-11-29",
+            "rawPassword", VALID_PASSWORD
+    );
+
+    public static final UserToSignUp USER_TO_SIGN_UP_WITH_DUPLICATE_USERNAME = UserToSignUp.from(
+            "duplicate2", "user_to_sign_up_duplicate@fakemail.com", LocalDate.of(1943, 11, 29), VALID_PASSWORD
     );
 }

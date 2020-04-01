@@ -8,7 +8,11 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class User {
 
@@ -24,14 +28,18 @@ public class User {
     @Past
     private final LocalDate dateOfBirth;
 
+    private final Collection<String> roles;
+
     private User(
             String username,
             String email,
-            LocalDate dateOfBirth
+            LocalDate dateOfBirth,
+            Collection<String> roles
     ) {
         this.username = username;
         this.email = email;
         this.dateOfBirth = dateOfBirth;
+        this.roles = roles;
     }
 
     public String getUsername() {
@@ -46,11 +54,20 @@ public class User {
         return dateOfBirth;
     }
 
+    public Collection<String> getRoles() {
+        return roles;
+    }
+
     public static User fromEntity(UserEntity entity) {
+        List<String> clonedRoles = entity.getRoles()
+                .stream()
+                .collect(Collectors.toUnmodifiableList());
+
         return new User(
                 entity.getUsername(),
                 entity.getEmail(),
-                entity.getDateOfBirth()
+                entity.getDateOfBirth(),
+                clonedRoles
         );
     }
 
@@ -62,7 +79,19 @@ public class User {
         return new User(
                 username,
                 email,
-                dateOfBirth
+                dateOfBirth,
+                List.of()
+        );
+    }
+
+    public static User adminWith(ApplicationProperties.Credentials credentials) {
+        String username = credentials.getUsername();
+
+        return new User(
+                username,
+                username + "@localhost",
+                LocalDate.of(1970, 1, 1),
+                Set.of("ADMIN")
         );
     }
 
@@ -83,10 +112,14 @@ public class User {
     public UserEntity toEntityWithId(String id) {
         UserEntity entity = new UserEntity();
 
+        List<String> clonedRoles = roles.stream()
+                .collect(Collectors.toUnmodifiableList());
+
         entity.setId(id);
         entity.setUsername(username);
         entity.setEmail(email);
         entity.setDateOfBirth(dateOfBirth);
+        entity.setRoles(clonedRoles);
 
         return entity;
     }

@@ -37,8 +37,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-//        AuthenticationManager authenticationManager = authenticationManager();
-
         // @formatter:off
         http
                 .cors()
@@ -55,7 +53,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                     .antMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()
                     .anyRequest().authenticated()
                     .and()
-//
+
                 .addFilter(new JwtAuthenticationFilter(authenticationManager, objectMapper, jwtTokenService))
                 .addFilter(new JwtAuthorizationFilter(authenticationManager, jwtTokenService))
 

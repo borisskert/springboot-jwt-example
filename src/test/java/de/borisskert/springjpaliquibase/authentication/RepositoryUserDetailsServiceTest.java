@@ -1,6 +1,6 @@
 package de.borisskert.springjpaliquibase.authentication;
 
-import de.borisskert.springjpaliquibase.UserService;
+import de.borisskert.springjpaliquibase.ApplicationProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,18 +21,18 @@ import static org.hamcrest.Matchers.is;
 class RepositoryUserDetailsServiceTest {
 
     @Autowired
-    private UserService userService;
+    private AdminAccountCreation adminAccountCreation;
 
     @Autowired
     private RepositoryUserDetailsService userDetailsService;
 
     @Test
     public void shouldProvideAdminUser() throws Exception {
-        AppProperties.Credentials credentials = new AppProperties.Credentials();
+        ApplicationProperties.Credentials credentials = new ApplicationProperties.Credentials();
         credentials.setUsername("admin");
         credentials.setPassword("admin123");
 
-        userService.initializeAdmins(Set.of(credentials));
+        adminAccountCreation.initializeAdmins(Set.of(credentials));
 
         UserDetails details = userDetailsService.loadUserByUsername("admin");
 

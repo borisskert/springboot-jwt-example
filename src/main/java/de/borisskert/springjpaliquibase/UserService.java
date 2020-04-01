@@ -1,10 +1,7 @@
 package de.borisskert.springjpaliquibase;
 
-import de.borisskert.springjpaliquibase.authentication.AppProperties;
 import de.borisskert.springjpaliquibase.persistence.UserEntity;
 import de.borisskert.springjpaliquibase.persistence.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,7 +16,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserService {
-    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -67,7 +63,22 @@ public class UserService {
         repository.save(entity);
     }
 
-    public String signUp(UserWithPassword user) {
+    public String signUp(UserToSignUp user) {
+        throwIfUsernameExists(user.getUsername());
+
+        String id = createNewId();
+        UserEntity entity = user.toEntityWithId(id);
+
+        String encryptedPassword = passwordEncoder.encode(user.getRawPassword());
+        entity.setPassword(encryptedPassword);
+        entity.setRoles(List.of("USER"));
+
+        repository.save(entity);
+
+        return id;
+    }
+
+    public String create(UserWithPassword user) {
         throwIfUsernameExists(user.getUsername());
 
         String id = createNewId();
@@ -79,31 +90,6 @@ public class UserService {
         repository.save(entity);
 
         return id;
-    }
-
-    public void initializeAdmins(Collection<AppProperties.Credentials> admins) {
-        admins
-                .forEach(credentials -> {
-                    repository.findOneByUsername(credentials.getUsername())
-                            .ifPresentOrElse(
-                                    user -> {
-                                        LOG.debug("Admin '" + user.getUsername() + "' already exists");
-                                    },
-                                    () -> createAdmin(credentials)
-                            );
-                });
-    }
-
-    private void createAdmin(AppProperties.Credentials credentials) {
-        String newId = createNewId();
-        String encryptedPassword = passwordEncoder.encode(credentials.getPassword());
-
-        UserEntity entity = credentials.toEntityWithIdAndEncryptedPassword(
-                newId,
-                encryptedPassword
-        );
-
-        repository.save(entity);
     }
 
     private String createNewId() {

@@ -64,7 +64,7 @@ public class UsersEndpoint {
     }
 
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody @Valid UserWithPassword newUserWithPassword) {
+    public ResponseEntity<?> signUp(@RequestBody @Valid UserToSignUp newUserWithPassword) {
         String createdId = service.signUp(newUserWithPassword);
 
         return ResponseEntity.created(URI.create("/api/users/" + createdId))

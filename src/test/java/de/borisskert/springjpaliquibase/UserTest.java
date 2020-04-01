@@ -4,8 +4,10 @@ import de.borisskert.springjpaliquibase.persistence.UserEntity;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
@@ -40,12 +42,14 @@ class UserTest {
         entity.setUsername("my_username");
         entity.setEmail("mail@fakemail.com");
         entity.setDateOfBirth(LocalDate.of(1984, 5, 31));
+        entity.setRoles(List.of("ADMIN", "USER"));
 
         User user = User.fromEntity(entity);
 
         assertThat(user.getUsername(), is(equalTo("my_username")));
         assertThat(user.getEmail(), is(equalTo("mail@fakemail.com")));
         assertThat(user.getDateOfBirth(), is(equalTo(LocalDate.of(1984, 5, 31))));
+        assertThat(user.getRoles(), containsInAnyOrder("ADMIN", "USER"));
     }
 
     @Test

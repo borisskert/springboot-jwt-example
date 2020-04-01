@@ -32,7 +32,7 @@ public class UserEntity {
     private String password;
 
     @Convert(converter = JsonStringArrayConverter.class)
-    private List<String> roles;
+    private List<String> roles = List.of();
 
     public String getId() {
         return id;

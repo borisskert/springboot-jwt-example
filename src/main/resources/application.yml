@@ -6,4 +6,4 @@ spring:
 app:
   admins:
     - username: admin
-      password: admin123
+

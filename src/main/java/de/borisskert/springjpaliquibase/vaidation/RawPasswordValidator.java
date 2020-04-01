@@ -1,9 +1,12 @@
 package de.borisskert.springjpaliquibase.vaidation;
 
+import org.springframework.stereotype.Component;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
 
+@Component
 public class RawPasswordValidator implements ConstraintValidator<RawPassword, String> {
 
     private static final int MINIMUM_PASSWORD_LENGTH = 8;

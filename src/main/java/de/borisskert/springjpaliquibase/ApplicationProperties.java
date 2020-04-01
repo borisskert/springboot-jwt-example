@@ -1,16 +1,14 @@
-package de.borisskert.springjpaliquibase.authentication;
+package de.borisskert.springjpaliquibase;
 
-import de.borisskert.springjpaliquibase.persistence.UserEntity;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "app")
-public class AppProperties {
+public class ApplicationProperties {
 
     @Size(min = 1)
     private List<Credentials> admins = new ArrayList<>();
@@ -28,7 +26,6 @@ public class AppProperties {
         @NotEmpty
         private String username;
 
-        @NotEmpty
         private String password;
 
         public String getUsername() {
@@ -47,17 +44,8 @@ public class AppProperties {
             this.password = password;
         }
 
-        public UserEntity toEntityWithIdAndEncryptedPassword(String id, String encryptedPassword) {
-            UserEntity entity = new UserEntity();
-
-            entity.setId(id);
-            entity.setUsername(username);
-            entity.setPassword(encryptedPassword);
-            entity.setDateOfBirth(LocalDate.of(1970, 1, 1));
-            entity.setEmail(username + "@localhost");
-            entity.setRoles(List.of("ADMIN"));
-
-            return entity;
+        public boolean hasPassword() {
+            return password != null;
         }
     }
 }

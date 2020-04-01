@@ -6,9 +6,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -59,14 +61,17 @@ class UserServiceTest {
 
     @Test
     public void shouldSignUpUser() throws Exception {
-        UserWithPassword userWithPassword = MockUsers.USER_TO_SIGN_UP;
+        UserToSignUp userToSignUp = MockUsers.USER_TO_SIGN_UP;
 
-        String id = service.signUp(userWithPassword);
+        String id = service.signUp(userToSignUp);
         Optional<User> maybe = service.getUserById(id);
 
         assertThat(maybe.isPresent(), is(equalTo(true)));
 
         User actual = maybe.get();
-        assertThat(actual, is(equalTo(userWithPassword.getUser())));
+        assertThat(actual.getUsername(), is(equalTo("sign_up")));
+        assertThat(actual.getEmail(), is(equalTo("user_to_sign_up@fakemail.com")));
+        assertThat(actual.getDateOfBirth(), is(equalTo(LocalDate.of(1943, 11, 29))));
+        assertThat(actual.getRoles(), containsInAnyOrder("USER"));
     }
 }

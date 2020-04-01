@@ -28,6 +28,7 @@ public class User {
     @Past
     private final LocalDate dateOfBirth;
 
+    @NotNull
     private final Collection<String> roles;
 
     private User(

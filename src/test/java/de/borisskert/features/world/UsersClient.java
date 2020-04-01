@@ -3,7 +3,6 @@ package de.borisskert.features.world;
 import de.borisskert.features.model.User;
 import de.borisskert.features.model.UserWithId;
 import de.borisskert.features.model.UserWithPassword;
-import org.apiguardian.api.API;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -21,13 +20,16 @@ import static org.springframework.http.HttpStatus.OK;
 public class UsersClient {
 
     private static final String API_USERS_URL = "/api/users";
+
     private final CucumberHttpClient httpClient;
+    private final AuthenticationClient authenticationClient;
 
     private String latestLocation;
 
     @Autowired
-    public UsersClient(CucumberHttpClient httpClient) {
+    public UsersClient(CucumberHttpClient httpClient, AuthenticationClient authenticationClient) {
         this.httpClient = httpClient;
+        this.authenticationClient = authenticationClient;
     }
 
     public void get(String userId) {
@@ -48,11 +50,14 @@ public class UsersClient {
     }
 
     public void create(User user) {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
         httpClient.post(API_USERS_URL, user);
     }
 
-    public final void insert(String id, User user) {
-        httpClient.put(API_USERS_URL + "/" + id, user);
+    public final void insert(UserWithId user) {
+        httpClient.put(API_USERS_URL + "/" + user.id, user);
     }
 
     public void userHasBeenCreated() {
@@ -65,7 +70,7 @@ public class UsersClient {
     }
 
     public void insert(List<UserWithId> usersWithId) {
-        usersWithId.forEach(userWithId -> this.insert(userWithId.id, userWithId.user));
+        usersWithId.forEach(this::insert);
     }
 
     public void getAll() {
@@ -79,6 +84,6 @@ public class UsersClient {
     }
 
     public void signUp(UserWithPassword user) {
-        httpClient.post(API_USERS_URL  + "/sign-up", user);
+        httpClient.post(API_USERS_URL + "/sign-up", user);
     }
 }

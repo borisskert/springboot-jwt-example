@@ -15,11 +15,13 @@ public class User implements Comparable<User> {
     public final String username;
     public final String email;
     public final LocalDate dateOfBirth;
+    public final String[] roles;
 
-    private User(String username, String email, LocalDate dateOfBirth) {
+    private User(String username, String email, LocalDate dateOfBirth, String[] roles) {
         this.username = username;
         this.email = email;
         this.dateOfBirth = dateOfBirth;
+        this.roles = roles;
     }
 
     @Override
@@ -58,7 +60,8 @@ public class User implements Comparable<User> {
         String username = entry.get("Username");
         String email = entry.get("Email");
         LocalDate birthDate = LocalDate.parse(entry.get("Day of Birth"));
+        String[] roles = entry.get("Roles").split(",");
 
-        return new User(username, email, birthDate);
+        return new User(username, email, birthDate, roles);
     }
 }

@@ -1,5 +1,6 @@
 package de.borisskert.features.steps;
 
+import de.borisskert.features.model.Credentials;
 import de.borisskert.features.model.User;
 import de.borisskert.features.model.UserWithId;
 import de.borisskert.features.model.UserWithPassword;
@@ -49,7 +50,7 @@ public class UsersSteps {
 
     @And("A user exists with ID")
     public void aUserHasBeenInsertedWithID(UserWithId dataTable) {
-        usersClient.insert(dataTable.id, dataTable.user);
+        usersClient.insert(dataTable);
     }
 
     @When("I create a user")
@@ -79,22 +80,12 @@ public class UsersSteps {
 
     @When("I insert a user with ID")
     public void iInsertAUserWithID(UserWithId dataTable) {
-        usersClient.insert(dataTable.id, dataTable.user);
+        usersClient.insert(dataTable);
     }
 
     @DataTableType
     public User defineUser(Map<String, String> entry) {
         return User.from(entry);
-    }
-
-    @DataTableType
-    public UserWithId defineUserWithId(Map<String, String> entry) {
-        return UserWithId.from(entry);
-    }
-
-    @DataTableType
-    public UserWithPassword defineUserWithPassword(Map<String, String> entry) {
-        return UserWithPassword.from(entry);
     }
 
     @When("I ask for all users")
@@ -115,5 +106,20 @@ public class UsersSteps {
     @And("I get the user location after sign-up")
     public void iGetTheUserLocationAfterSignUp() {
         usersClient.userHasBeenCreated();
+    }
+
+    @DataTableType
+    public UserWithId defineUserWithId(Map<String, String> entry) {
+        return UserWithId.from(entry);
+    }
+
+    @DataTableType
+    public UserWithPassword defineUserWithPassword(Map<String, String> entry) {
+        return UserWithPassword.from(entry);
+    }
+
+    @DataTableType
+    public Credentials defineCredentials(Map<String, String> entry) {
+        return Credentials.from(entry);
     }
 }

@@ -1,5 +1,6 @@
 package de.borisskert.springjpaliquibase.persistence;
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -8,6 +9,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "user")
@@ -28,6 +30,9 @@ public class UserEntity {
     private LocalDate dateOfBirth;
 
     private String password;
+
+    @Convert(converter = JsonStringArrayConverter.class)
+    private List<String> roles;
 
     public String getId() {
         return id;
@@ -67,5 +72,13 @@ public class UserEntity {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> groups) {
+        this.roles = groups;
     }
 }

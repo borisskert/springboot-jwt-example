@@ -8,6 +8,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,6 +41,7 @@ class UserRepositoryTest {
         entityToSave.setUsername("The3aep1");
         entityToSave.setEmail("The3aep1@fakemail.com");
         entityToSave.setDateOfBirth(LocalDate.of(1987, 11, 15));
+        entityToSave.setRoles(List.of("ADMIN", "USER"));
 
         repository.save(entityToSave);
 
@@ -51,6 +53,7 @@ class UserRepositoryTest {
         assertThat(existingEntity.getUsername(), is(equalTo("The3aep1")));
         assertThat(existingEntity.getEmail(), is(equalTo("The3aep1@fakemail.com")));
         assertThat(existingEntity.getDateOfBirth(), is(equalTo(LocalDate.of(1987, 11, 15))));
+        assertThat(existingEntity.getRoles(), is(equalTo(List.of("ADMIN", "USER"))));
     }
 
     @Test

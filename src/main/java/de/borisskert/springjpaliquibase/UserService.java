@@ -1,15 +1,16 @@
 package de.borisskert.springjpaliquibase;
 
+import de.borisskert.springjpaliquibase.authentication.AppProperties;
 import de.borisskert.springjpaliquibase.persistence.UserEntity;
 import de.borisskert.springjpaliquibase.persistence.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.validation.Valid;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserService {
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -45,7 +47,7 @@ public class UserService {
                 .map(User::fromEntity);
     }
 
-    public String create(@RequestBody @Valid User user) {
+    public String create(User user) {
         throwIfUsernameExists(user.getUsername());
 
         String id = createNewId();
@@ -56,7 +58,7 @@ public class UserService {
         return id;
     }
 
-    public void insert(@PathVariable String id, @RequestBody @Valid User user) {
+    public void insert(String id, User user) {
         throwIfIdExists(id);
         throwIfUsernameExists(user.getUsername());
 
@@ -79,10 +81,29 @@ public class UserService {
         return id;
     }
 
-    public boolean isPasswordCorrect(String username, String rawPassword) {
-        return repository.findPasswordFor(username)
-                .map(encryptedPassword -> passwordEncoder.matches(rawPassword, encryptedPassword))
-                .orElse(false);
+    public void initializeAdmins(Collection<AppProperties.Credentials> admins) {
+        admins
+                .forEach(credentials -> {
+                    repository.findOneByUsername(credentials.getUsername())
+                            .ifPresentOrElse(
+                                    user -> {
+                                        LOG.debug("Admin '" + user.getUsername() + "' already exists");
+                                    },
+                                    () -> createAdmin(credentials)
+                            );
+                });
+    }
+
+    private void createAdmin(AppProperties.Credentials credentials) {
+        String newId = createNewId();
+        String encryptedPassword = passwordEncoder.encode(credentials.getPassword());
+
+        UserEntity entity = credentials.toEntityWithIdAndEncryptedPassword(
+                newId,
+                encryptedPassword
+        );
+
+        repository.save(entity);
     }
 
     private String createNewId() {
@@ -91,13 +112,13 @@ public class UserService {
 
     private void throwIfIdExists(String id) {
         if (repository.findById(id).isPresent()) {
-            throw new UsernameAlreadyExistsException("Id '" + id + "' already exists");
+            throw new UserAlreadyExistsException("Id '" + id + "' already exists");
         }
     }
 
     private void throwIfUsernameExists(String username) {
         if (repository.findOneByUsername(username).isPresent()) {
-            throw new UsernameAlreadyExistsException("Username '" + username + "' already exists");
+            throw new UserAlreadyExistsException("Username '" + username + "' already exists");
         }
     }
 }

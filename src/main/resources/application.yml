@@ -2,3 +2,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+app:
+  admins:
+    - username: admin
+      password: admin123

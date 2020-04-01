@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1585668914342
+      author: borisskert
+      changes:
+        - addColumn:
+            tableName: user
+            columns:
+              - column:
+                  name: roles
+                  type: longtext

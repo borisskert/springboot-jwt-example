@@ -1,5 +1,6 @@
 package de.borisskert.springjpaliquibase;
 
+import de.borisskert.springjpaliquibase.authentication.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -8,12 +9,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Set;
 
 import static de.borisskert.springjpaliquibase.MockUsers.NOT_EXISTING_ID;
 import static de.borisskert.springjpaliquibase.MockUsers.USER_ID_TO_INSERT;
@@ -45,12 +50,16 @@ class UsersEndpointTest {
     private static final String CREATED_USER_ID = "777";
     private static final String SIGN_UP_USER_ID = "555";
     private static final String API_USERS_URL = "/api/users";
+    public static final String ADMIN_TOKEN_VALUE = "MY_TOKEN_VALUE";
 
     @Autowired
     private TestRestTemplate restTemplate;
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private JwtTokenService jwtTokenService;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -61,14 +70,22 @@ class UsersEndpointTest {
 
         when(userService.create(USER_TO_CREATE)).thenReturn(CREATED_USER_ID);
 
-        when(userService.create(eq(USER_WITH_DUPLICATE_USERNAME))).thenThrow(new UsernameAlreadyExistsException("Username 'duplicate' already exists"));
-        doThrow(new UsernameAlreadyExistsException("Username 'duplicate' already exists"))
+        when(userService.create(eq(USER_WITH_DUPLICATE_USERNAME))).thenThrow(new UserAlreadyExistsException("Username 'duplicate' already exists"));
+        doThrow(new UserAlreadyExistsException("Username 'duplicate' already exists"))
                 .when(userService).insert(any(), eq(USER_WITH_DUPLICATE_USERNAME));
 
         when(userService.signUp(USER_TO_SIGN_UP)).thenReturn(SIGN_UP_USER_ID);
         when(userService.signUp(eq(USER_TO_SIGN_UP_WITH_DUPLICATE_USERNAME))).thenThrow(
-                new UsernameAlreadyExistsException("Username 'duplicate' already exists")
+                new UserAlreadyExistsException("Username 'duplicate' already exists")
         );
+
+        UsernamePasswordAuthenticationToken adminAuthentication = new UsernamePasswordAuthenticationToken(
+                "admin",
+                null,
+                Set.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
+
+        when(jwtTokenService.authenticate(ADMIN_TOKEN_VALUE)).thenReturn(adminAuthentication);
     }
 
     @Nested
@@ -125,7 +142,7 @@ class UsersEndpointTest {
     class Post {
         @Test
         public void shouldCreateUser() throws Exception {
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, USER_TO_CREATE, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(USER_TO_CREATE);
 
             assertThat(response.getStatusCode(), is(equalTo(CREATED)));
             assertThat(response.getHeaders().get("Location").get(0), is(equalTo("/api/users/777")));
@@ -135,7 +152,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithoutUsername() throws Exception {
             User userToCreate = User.from(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
@@ -143,7 +160,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithTooShortUsername() throws Exception {
             User userToCreate = User.from("short", "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
@@ -151,7 +168,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithTooLongUsername() throws Exception {
             User userToCreate = User.from("tooooooo_long", "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
@@ -159,7 +176,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithoutEmail() throws Exception {
             User userToCreate = User.from("my_username", null, LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
@@ -167,7 +184,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithIllegalEmail() throws Exception {
             User userToCreate = User.from("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
@@ -175,7 +192,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithoutBirthDate() throws Exception {
             User userToCreate = User.from("my_username", "my@fakemail.com", null);
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
@@ -183,14 +200,23 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
             User userToCreate = User.from("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
 
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, userToCreate, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
-            ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_URL, USER_WITH_DUPLICATE_USERNAME, Void.class);
+            ResponseEntity<Void> response = createUserWithAdminRights(USER_WITH_DUPLICATE_USERNAME);
             assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+        }
+
+        private ResponseEntity<Void> createUserWithAdminRights(User user) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
+
+            HttpEntity<User> httpEntity = new HttpEntity<>(user, headers);
+
+            return restTemplate.exchange(API_USERS_URL, HttpMethod.POST, httpEntity, Void.class);
         }
     }
 

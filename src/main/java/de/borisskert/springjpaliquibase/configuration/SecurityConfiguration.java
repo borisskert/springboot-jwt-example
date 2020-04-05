@@ -1,5 +1,6 @@
 package de.borisskert.springjpaliquibase.configuration;
 
+import com.auth0.spring.security.api.JwtWebSecurityConfigurer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.borisskert.springjpaliquibase.authentication.JwtTokenService;
 import de.borisskert.springjpaliquibase.authentication.RepositoryUserDetailsService;
@@ -38,12 +39,13 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         // @formatter:off
-        http
+        JwtWebSecurityConfigurer
+                .forRS256("apiAudience", "issuer")
+                .configure(http)
                 .cors()
                     .and()
-
-                .csrf().disable()
-
+                .csrf()
+                    .disable()
                 .authorizeRequests()
                     .antMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                     .antMatchers(HttpMethod.POST, "/api/users/sign-up").permitAll()
@@ -58,8 +60,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .addFilter(new JwtAuthorizationFilter(authenticationManager, jwtTokenService))
 
                 .sessionManagement()
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        ;
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         // @formatter:on
     }
 

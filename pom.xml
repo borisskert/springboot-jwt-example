@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>de.borisskert</groupId>
-    <artifactId>spring-jpa-liquibase</artifactId>
+    <artifactId>spring-jwt-example</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <name>spring-jpa-liquibase</name>

@@ -42,7 +42,7 @@ public class UsersClient {
 
     public void userHasBeenRetrieved(User expectedUser) {
         httpClient.verifyLatestStatus(OK);
-        httpClient.verifyLatestBody(expectedUser, User.class);
+        httpClient.verifyLatestBodyIsEqualTo(expectedUser, User.class);
     }
 
     public void userHasNotBeenFound() {
@@ -80,7 +80,7 @@ public class UsersClient {
     public void usersHasBeenRetrieved(List<User> dataTable) {
         httpClient.get(API_USERS_URL);
         httpClient.verifyLatestStatus(OK);
-        httpClient.verifyLatestBody(dataTable, User.LIST_TYPE);
+        httpClient.verifyLatestBodyContainsInAnyOrder(dataTable, User.LIST_TYPE);
     }
 
     public void signUp(UserWithPassword user) {

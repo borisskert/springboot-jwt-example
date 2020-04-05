@@ -2,6 +2,7 @@ package de.borisskert.springjpaliquibase;
 
 import de.borisskert.springjpaliquibase.authentication.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +43,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext
@@ -52,7 +55,8 @@ class UsersEndpointTest {
     private static final String CREATED_USER_ID = "777";
     private static final String SIGN_UP_USER_ID = "555";
     private static final String API_USERS_URL = "/api/users";
-    public static final String ADMIN_TOKEN_VALUE = "MY_TOKEN_VALUE";
+    public static final String ADMIN_TOKEN_VALUE = "MY_ADMIN_TOKEN_VALUE";
+    public static final String USER_TOKEN_VALUE = "MY_USER_TOKEN_VALUE";
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -83,6 +87,14 @@ class UsersEndpointTest {
         );
 
         when(jwtTokenService.authenticate(ADMIN_TOKEN_VALUE)).thenReturn(adminAuthentication);
+
+        UsernamePasswordAuthenticationToken userAuthentication = new UsernamePasswordAuthenticationToken(
+                "user",
+                null,
+                Set.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+
+        when(jwtTokenService.authenticate(USER_TOKEN_VALUE)).thenReturn(userAuthentication);
     }
 
     @Nested
@@ -221,24 +233,14 @@ class UsersEndpointTest {
     class Put {
         @Test
         public void shouldInsertUser() throws Exception {
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(USER_TO_INSERT),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, USER_TO_INSERT);
 
             assertThat(response.getStatusCode(), is(equalTo(OK)));
         }
 
         @Test
         public void shouldNotAllowToInsertUserWithIllegalId() throws Exception {
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/444",
-                    HttpMethod.PUT,
-                    new HttpEntity<>(USER_TO_INSERT),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights("444", USER_TO_INSERT);
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
@@ -247,12 +249,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithoutUsername() throws Exception {
             User userToCreate = User.from(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(userToCreate),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
@@ -261,12 +258,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithoutEmail() throws Exception {
             User userToCreate = User.from("my_username", null, LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(userToCreate),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
@@ -275,12 +267,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithIllegalEmail() throws Exception {
             User userToCreate = User.from("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
 
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(userToCreate),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
@@ -289,12 +276,7 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithoutBirthDate() throws Exception {
             User userToCreate = User.from("my_username", "my@fakemail.com", null);
 
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(userToCreate),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
@@ -303,26 +285,63 @@ class UsersEndpointTest {
         public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
             User userToCreate = User.from("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
 
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(userToCreate),
-                    Void.class
-            );
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
         public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
+            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, USER_WITH_DUPLICATE_USERNAME);
+            assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+        }
+
+        @Test
+        @Disabled
+        public void shouldNotAllowRequestWithUserPermissions() throws Exception {
+            ResponseEntity<Void> response = insertUserWithUserRights(USER_ID_TO_INSERT, USER_TO_INSERT);
+            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+        }
+
+        @Test
+        @Disabled
+        public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
             ResponseEntity<Void> response = restTemplate.exchange(
                     API_USERS_URL + "/" + USER_ID_TO_INSERT,
                     HttpMethod.PUT,
-                    new HttpEntity<>(USER_WITH_DUPLICATE_USERNAME),
+                    new HttpEntity<>(USER_TO_INSERT),
                     Void.class
             );
 
-            assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+        }
+
+        private ResponseEntity<Void> insertUserWithAdminRights(String id, User user) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
+
+            HttpEntity<User> httpEntity = new HttpEntity<>(user, headers);
+
+            return restTemplate.exchange(
+                    API_USERS_URL + "/" + id,
+                    HttpMethod.PUT,
+                    httpEntity,
+                    Void.class
+            );
+        }
+
+        private ResponseEntity<Void> insertUserWithUserRights(String id, User user) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Bearer " + USER_TOKEN_VALUE);
+
+            HttpEntity<User> httpEntity = new HttpEntity<>(user, headers);
+
+            return restTemplate.exchange(
+                    API_USERS_URL + "/" + id,
+                    HttpMethod.PUT,
+                    httpEntity,
+                    Void.class
+            );
         }
     }
 

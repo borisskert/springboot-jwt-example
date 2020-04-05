@@ -1,7 +1,7 @@
 package de.borisskert.features.steps;
 
 import de.borisskert.features.FeaturesConfiguration;
-import de.borisskert.springjpaliquibase.Application;
+import de.borisskert.springjwt.Application;
 import io.cucumber.java.en.Given;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

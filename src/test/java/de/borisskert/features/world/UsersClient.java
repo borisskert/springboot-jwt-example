@@ -33,10 +33,16 @@ public class UsersClient {
     }
 
     public void get(String userId) {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
         httpClient.get(API_USERS_URL + "/" + userId);
     }
 
     public void getUserByLocation() {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
         httpClient.get(latestLocation);
     }
 
@@ -77,10 +83,16 @@ public class UsersClient {
     }
 
     public void getAll() {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
         httpClient.get(API_USERS_URL);
     }
 
     public void usersHasBeenRetrieved(List<User> dataTable) {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
         httpClient.get(API_USERS_URL);
         httpClient.verifyLatestStatus(OK);
         httpClient.verifyLatestBodyContainsInAnyOrder(dataTable, User.LIST_TYPE);

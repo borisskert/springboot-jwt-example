@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -32,6 +34,7 @@ import static de.borisskert.springjwt.MockUsers.USER_TO_SIGN_UP_AS_MAP;
 import static de.borisskert.springjwt.MockUsers.USER_WITH_DUPLICATE_USERNAME;
 import static de.borisskert.springjwt.MockUsers.VALID_PASSWORD;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,6 +53,8 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext
 class UsersEndpointTest {
+    private static final ParameterizedTypeReference<List<User>> USER_LIST_TYPE = new ParameterizedTypeReference<>() {
+    };
 
     private static final String CREATED_USER_ID = "777";
     private static final String SIGN_UP_USER_ID = "555";
@@ -100,7 +105,7 @@ class UsersEndpointTest {
     class GetById {
         @Test
         public void shouldRetrieveUserById() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users/" + USER_ONE_ID, User.class);
+            ResponseEntity<User> response = getUserByIdWithAdminRights(USER_ONE_ID);
 
             assertThat(response.getStatusCode(), is(equalTo(OK)));
             assertThat(response.getBody(), is(equalTo(USER_ONE)));
@@ -108,9 +113,40 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotFindWithUnknownId() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users/" + NOT_EXISTING_ID, User.class);
+            ResponseEntity<Void> response = tryToGetUserByIdWithAdminRights(NOT_EXISTING_ID);
 
             assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+        }
+
+        @Test
+        public void shouldNotAllowFindUserByIdWithUserRights() throws Exception {
+            ResponseEntity<Void> response = tryToGetUserByIdWithUserRights(USER_ONE_ID);
+
+            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+        }
+
+        @Test
+        public void shouldNotAllowFindUserByIdWithoutRights() throws Exception {
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    API_USERS_URL + "/" + USER_ONE_ID,
+                    HttpMethod.GET,
+                    null,
+                    Void.class
+            );
+
+            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+        }
+
+        private ResponseEntity<User> getUserByIdWithAdminRights(String id) {
+            return requestWithAdminRights(API_USERS_URL + "/" + id, HttpMethod.GET, null, User.class);
+        }
+
+        private ResponseEntity<Void> tryToGetUserByIdWithAdminRights(String id) {
+            return requestWithAdminRights(API_USERS_URL + "/" + id, HttpMethod.GET, null, Void.class);
+        }
+
+        private ResponseEntity<Void> tryToGetUserByIdWithUserRights(String id) {
+            return requestWithUserRights(API_USERS_URL + "/" + id, HttpMethod.GET, null, Void.class);
         }
     }
 
@@ -118,7 +154,7 @@ class UsersEndpointTest {
     class GetByUsername {
         @Test
         public void shouldFindUserByUsername() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users?username=my_username", User.class);
+            ResponseEntity<User> response = getUserByUsernameWithAdminRights("my_username");
 
             assertThat(response.getStatusCode(), is(equalTo(OK)));
             assertThat(response.getBody(), is(equalTo(USER_ONE)));
@@ -126,23 +162,102 @@ class UsersEndpointTest {
 
         @Test
         public void shouldNotFindUserByUnknownUsername() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users?username=h4xx0r", User.class);
+            ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("h4xx0r");
 
             assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
         }
 
         @Test
-        public void shouldAcceptTooShortUsername() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users?username=ccc", User.class);
+        public void shouldNotAcceptTooShortUsername() throws Exception {
+            ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("ccc");
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
 
         @Test
-        public void shouldAcceptTooLongUsername() throws Exception {
-            ResponseEntity<User> response = restTemplate.getForEntity("/api/users?username=mycrazyusernamewhichistolong", User.class);
+        public void shouldNotAcceptTooLongUsername() throws Exception {
+            ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("mycrazyusernamewhichistolong");
 
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+        }
+
+        @Test
+        public void shouldNotAcceptUserPermissions() throws Exception {
+            ResponseEntity<Void> response = tryToGetUserByUsernameWithUserRights("my_username");
+
+            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+        }
+
+        @Test
+        public void shouldNotAcceptUnauthorized() throws Exception {
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    API_USERS_URL + "?username=my_username",
+                    HttpMethod.GET,
+                    null,
+                    Void.class
+            );
+
+            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+        }
+
+        private ResponseEntity<User> getUserByUsernameWithAdminRights(String username) {
+            return requestWithAdminRights(API_USERS_URL + "?username=" + username, HttpMethod.GET, null, User.class);
+        }
+
+        private ResponseEntity<Void> tryToGetUserByUsernameWithAdminRights(String username) {
+            return requestWithAdminRights(API_USERS_URL + "?username=" + username, HttpMethod.GET, null, Void.class);
+        }
+
+        private ResponseEntity<Void> tryToGetUserByUsernameWithUserRights(String username) {
+            return requestWithUserRights(API_USERS_URL + "?username=" + username, HttpMethod.GET, null, Void.class);
+        }
+    }
+
+    @Nested
+    class GetAll {
+
+        private User userOne;
+        private User userTwo;
+
+        @BeforeEach
+        public void setup() throws Exception {
+            userOne = User.from("username 1", "user1@fakemail.com", LocalDate.of(1990, 10, 3));
+            userTwo = User.from("username 2", "user2@fakemail.com", LocalDate.of(1990, 10, 2));
+
+            when(userService.getAllUsers()).thenReturn(List.of(userOne, userTwo));
+        }
+
+        @Test
+        public void shouldAllowWithAdminRights() throws Exception {
+            ResponseEntity<List<User>> response = getAllUsersWithAdminRights();
+
+            assertThat(response.getStatusCode(), is(equalTo(OK)));
+
+            List<User> body = response.getBody();
+            assertThat(body, containsInAnyOrder(userOne, userTwo));
+        }
+
+        @Test
+        public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    API_USERS_URL,
+                    HttpMethod.GET,
+                    null,
+                    Void.class
+            );
+
+            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+        }
+
+        @Test
+        public void shouldNotAllowRequestWithUserRights() throws Exception {
+            ResponseEntity<Void> response = requestWithUserRights(API_USERS_URL, HttpMethod.GET, null, Void.class);
+
+            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+        }
+
+        private ResponseEntity<List<User>> getAllUsersWithAdminRights() {
+            return requestWithAdminRights(API_USERS_URL, HttpMethod.GET, null, USER_LIST_TYPE);
         }
     }
 
@@ -538,6 +653,15 @@ class UsersEndpointTest {
     }
 
     private <T> ResponseEntity<T> requestWithAdminRights(String url, HttpMethod method, Object body, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(body, headers);
+
+        return restTemplate.exchange(url, method, httpEntity, responseType);
+    }
+
+    private <T> ResponseEntity<List<T>> requestWithAdminRights(String url, HttpMethod method, Object body, ParameterizedTypeReference<List<T>> responseType) {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
 

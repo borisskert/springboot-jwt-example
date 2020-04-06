@@ -2,7 +2,6 @@ package de.borisskert.springjwt;
 
 import de.borisskert.springjwt.authentication.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -219,13 +218,30 @@ class UsersEndpointTest {
             assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
         }
 
+        @Test
+        public void shouldNotAllowRequestWithUserPermissions() throws Exception {
+            ResponseEntity<Void> response = createUserWithUserRights(USER_TO_INSERT);
+            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+        }
+
+        @Test
+        public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
+                    HttpMethod.PUT,
+                    new HttpEntity<>(USER_TO_INSERT),
+                    Void.class
+            );
+
+            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+        }
+
         private ResponseEntity<Void> createUserWithAdminRights(User user) {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
+            return requestWithAdminRights(API_USERS_URL, HttpMethod.POST, user, Void.class);
+        }
 
-            HttpEntity<User> httpEntity = new HttpEntity<>(user, headers);
-
-            return restTemplate.exchange(API_USERS_URL, HttpMethod.POST, httpEntity, Void.class);
+        private ResponseEntity<Void> createUserWithUserRights(User user) {
+            return requestWithUserRights(API_USERS_URL, HttpMethod.POST, user, Void.class);
         }
     }
 
@@ -297,14 +313,12 @@ class UsersEndpointTest {
         }
 
         @Test
-        @Disabled
         public void shouldNotAllowRequestWithUserPermissions() throws Exception {
             ResponseEntity<Void> response = insertUserWithUserRights(USER_ID_TO_INSERT, USER_TO_INSERT);
             assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
         }
 
         @Test
-        @Disabled
         public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
             ResponseEntity<Void> response = restTemplate.exchange(
                     API_USERS_URL + "/" + USER_ID_TO_INSERT,
@@ -317,31 +331,11 @@ class UsersEndpointTest {
         }
 
         private ResponseEntity<Void> insertUserWithAdminRights(String id, User user) {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
-
-            HttpEntity<User> httpEntity = new HttpEntity<>(user, headers);
-
-            return restTemplate.exchange(
-                    API_USERS_URL + "/" + id,
-                    HttpMethod.PUT,
-                    httpEntity,
-                    Void.class
-            );
+            return requestWithAdminRights(API_USERS_URL + "/" + id, HttpMethod.PUT, user, Void.class);
         }
 
         private ResponseEntity<Void> insertUserWithUserRights(String id, User user) {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + USER_TOKEN_VALUE);
-
-            HttpEntity<User> httpEntity = new HttpEntity<>(user, headers);
-
-            return restTemplate.exchange(
-                    API_USERS_URL + "/" + id,
-                    HttpMethod.PUT,
-                    httpEntity,
-                    Void.class
-            );
+            return requestWithUserRights(API_USERS_URL + "/" + id, HttpMethod.PUT, user, Void.class);
         }
     }
 
@@ -541,5 +535,23 @@ class UsersEndpointTest {
             ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, withoutBirthDate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
+    }
+
+    private <T> ResponseEntity<T> requestWithAdminRights(String url, HttpMethod method, Object body, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(body, headers);
+
+        return restTemplate.exchange(url, method, httpEntity, responseType);
+    }
+
+    private <T> ResponseEntity<T> requestWithUserRights(String url, HttpMethod method, Object body, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + USER_TOKEN_VALUE);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(body, headers);
+
+        return restTemplate.exchange(url, method, httpEntity, responseType);
     }
 }

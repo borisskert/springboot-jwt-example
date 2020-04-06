@@ -57,6 +57,9 @@ public class UsersClient {
     }
 
     public final void insert(UserWithId user) {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
         httpClient.put(API_USERS_URL + "/" + user.id, user);
     }
 

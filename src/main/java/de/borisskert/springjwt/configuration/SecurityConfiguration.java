@@ -50,7 +50,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                     .antMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                     .antMatchers(HttpMethod.POST, "/api/users/sign-up").permitAll()
                     .antMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
-                    .antMatchers(HttpMethod.PUT, "/api/users/**").permitAll()
+                    .antMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                     .antMatchers(HttpMethod.PATCH, "/api/users/**").permitAll()
                     .antMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()
                     .anyRequest().authenticated()

@@ -107,4 +107,8 @@ public class UserService {
             throw new UserAlreadyExistsException("Username '" + username + "' already exists");
         }
     }
+
+    public User getMyUser() {
+        return null;
+    }
 }

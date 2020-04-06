@@ -85,6 +85,20 @@ public class User {
         );
     }
 
+    public static User from(
+            String username,
+            String email,
+            LocalDate dateOfBirth,
+            Collection<String> roles
+    ) {
+        return new User(
+                username,
+                email,
+                dateOfBirth,
+                roles
+        );
+    }
+
     public static User adminWith(ApplicationProperties.Credentials credentials) {
         String username = credentials.getUsername();
 
@@ -130,13 +144,14 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return username.equals(user.username) &&
-                email.equals(user.email) &&
-                dateOfBirth.equals(user.dateOfBirth);
+        return Objects.equals(username, user.username) &&
+                Objects.equals(email, user.email) &&
+                Objects.equals(dateOfBirth, user.dateOfBirth) &&
+                Objects.equals(roles, user.roles);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(username, email, dateOfBirth);
+        return Objects.hash(username, email, dateOfBirth, roles);
     }
 }

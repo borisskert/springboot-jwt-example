@@ -59,8 +59,8 @@ class UsersEndpointTest {
     private static final String CREATED_USER_ID = "777";
     private static final String SIGN_UP_USER_ID = "555";
     private static final String API_USERS_URL = "/api/users";
-    public static final String ADMIN_TOKEN_VALUE = "MY_ADMIN_TOKEN_VALUE";
-    public static final String USER_TOKEN_VALUE = "MY_USER_TOKEN_VALUE";
+    private static final String ADMIN_TOKEN_VALUE = "MY_ADMIN_TOKEN_VALUE";
+    private static final String USER_TOKEN_VALUE = "MY_USER_TOKEN_VALUE";
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -258,6 +258,54 @@ class UsersEndpointTest {
 
         private ResponseEntity<List<User>> getAllUsersWithAdminRights() {
             return requestWithAdminRights(API_USERS_URL, HttpMethod.GET, null, USER_LIST_TYPE);
+        }
+    }
+
+    @Nested
+    class GetMy {
+
+        private User myUser;
+
+        @BeforeEach
+        public void setup() throws Exception {
+            myUser = User.from(
+                    "my username",
+                    "my@fakemail.com",
+                    LocalDate.of(1989, 11, 8),
+                    List.of("USER", "ADMIN")
+            );
+            when(userService.getMyUser()).thenReturn(myUser);
+        }
+
+        @Test
+        public void shouldAllowToGetMyUserWithAdminPermissions() throws Exception {
+            ResponseEntity<User> response = getMyUserWithAdminPermissions();
+
+            assertThat(response.getStatusCode(), is(equalTo(OK)));
+            assertThat(response.getBody(), is(equalTo(myUser)));
+        }
+
+        @Test
+        public void shouldAllowToGetMyUserWithUserPermissions() throws Exception {
+            ResponseEntity<User> response = getMyUserWithUserPermissions();
+
+            assertThat(response.getStatusCode(), is(equalTo(OK)));
+            assertThat(response.getBody(), is(equalTo(myUser)));
+        }
+
+        @Test
+        public void shouldNotAllowToGetMyUserWithoutPermissions() throws Exception {
+            ResponseEntity<Void> response = restTemplate.getForEntity(API_USERS_URL + "/me", Void.class);
+
+            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+        }
+
+        private ResponseEntity<User> getMyUserWithAdminPermissions() {
+            return requestWithAdminRights(API_USERS_URL + "/me", HttpMethod.GET, null, User.class);
+        }
+
+        private ResponseEntity<User> getMyUserWithUserPermissions() {
+            return requestWithUserRights(API_USERS_URL + "/me", HttpMethod.GET, null, User.class);
         }
     }
 

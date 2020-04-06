@@ -50,6 +50,12 @@ public class UsersEndpoint {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<User> getMyUser() {
+        User myUser = service.getMyUser();
+        return ResponseEntity.ok(myUser);
+    }
+
     @PostMapping
     public ResponseEntity<?> create(@RequestBody @Valid User user) {
         String createdId = service.create(user);

@@ -1,8 +1,6 @@
 package de.borisskert.springjwt.user;
 
 import de.borisskert.springjwt.user.persistence.UserEntity;
-import de.borisskert.springjwt.user.User;
-import de.borisskert.springjwt.user.UserWithPassword;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -17,18 +15,29 @@ class UserTest {
 
     @Test
     public void shouldConvertToEntity() throws Exception {
-        User user = User.from("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
+        User user = User.from(
+                "my_username",
+                "mail@fakemail.com",
+                LocalDate.of(1984, 5, 31),
+                List.of("USER", "ADMIN")
+        );
 
         UserEntity entity = user.toEntity();
 
         assertThat(entity.getUsername(), is(equalTo("my_username")));
         assertThat(entity.getEmail(), is(equalTo("mail@fakemail.com")));
         assertThat(entity.getDateOfBirth(), is(equalTo(LocalDate.of(1984, 5, 31))));
+        assertThat(entity.getRoles(), containsInAnyOrder("USER", "ADMIN"));
     }
 
     @Test
     public void shouldConvertToEntityWithId() throws Exception {
-        User user = User.from("my_username", "mail@fakemail.com", LocalDate.of(1984, 5, 31));
+        User user = User.from(
+                "my_username",
+                "mail@fakemail.com",
+                LocalDate.of(1984, 5, 31),
+                List.of("USER", "ADMIN")
+        );
 
         UserEntity entity = user.toEntityWithId("my_id");
 
@@ -36,6 +45,7 @@ class UserTest {
         assertThat(entity.getUsername(), is(equalTo("my_username")));
         assertThat(entity.getEmail(), is(equalTo("mail@fakemail.com")));
         assertThat(entity.getDateOfBirth(), is(equalTo(LocalDate.of(1984, 5, 31))));
+        assertThat(entity.getRoles(), containsInAnyOrder("USER", "ADMIN"));
     }
 
     @Test

@@ -121,6 +121,7 @@ public class User {
         entity.setUsername(username);
         entity.setEmail(email);
         entity.setDateOfBirth(dateOfBirth);
+        entity.setRoles(roles);
 
         return entity;
     }

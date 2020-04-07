@@ -9,7 +9,8 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Collection;
+import java.util.Set;
 
 @Entity
 @Table(name = "user")
@@ -32,7 +33,7 @@ public class UserEntity {
     private String password;
 
     @Convert(converter = JsonStringArrayConverter.class)
-    private List<String> roles = List.of();
+    private Collection<String> roles = Set.of();
 
     public String getId() {
         return id;
@@ -74,11 +75,11 @@ public class UserEntity {
         this.password = password;
     }
 
-    public List<String> getRoles() {
+    public Collection<String> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<String> groups) {
+    public void setRoles(Collection<String> groups) {
         this.roles = groups;
     }
 }

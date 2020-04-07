@@ -1,1 +1,226 @@
-{"_type":"export","__export_format":4,"__export_date":"2020-03-21T10:28:13.040Z","__export_source":"insomnia.desktop.app:v7.1.1","resources":[{"_id":"req_137a0819791d491b9f3594eb1c2b2e42","authentication":{},"body":{"mimeType":"application/json","text":"{\n\t\"username\": \"my_username2\",\n\t\"dateOfBirth\": \"1980-11-18\",\n\t\"email\": \"my@fakemail.com\"\n}"},"created":1584786406943,"description":"","headers":[{"id":"pair_6c1707f3e43f472a9915a9ad5ffddd8e","name":"Content-Type","value":"application/json"}],"isPrivate":false,"metaSortKey":-1584786406943,"method":"POST","modified":1584786442692,"name":"Create user","parameters":[],"parentId":"wrk_64a9a75ebeb742afb675b1f89c58b839","settingDisableRenderRequestBody":false,"settingEncodeUrl":true,"settingFollowRedirects":"global","settingRebuildPath":true,"settingSendCookies":true,"settingStoreCookies":true,"url":"http://localhost:8080/api/users","_type":"request"},{"_id":"wrk_64a9a75ebeb742afb675b1f89c58b839","created":1584785919918,"description":"","modified":1584785919918,"name":"Insomnia","parentId":null,"_type":"workspace"},{"_id":"req_309f4f2baa8d4b6295081805e4959b59","authentication":{},"body":{},"created":1584786352214,"description":"","headers":[],"isPrivate":false,"metaSortKey":-1584786352214,"method":"GET","modified":1584786393195,"name":"Get user","parameters":[],"parentId":"wrk_64a9a75ebeb742afb675b1f89c58b839","settingDisableRenderRequestBody":false,"settingEncodeUrl":true,"settingFollowRedirects":"global","settingRebuildPath":true,"settingSendCookies":true,"settingStoreCookies":true,"url":"http://localhost:8080/api/users/6e93a3fd-ad93-469f-8ca1-ad132d18ab7b","_type":"request"},{"_id":"req_4a5233caee654a17986ecf6ce35f8984","authentication":{},"body":{"mimeType":"application/json","text":"{\n\t\"username\": \"my_username\",\n\t\"dateOfBirth\": \"1980-11-18\",\n\t\"email\": \"my@fakemail.com\"\n}"},"created":1584785952454,"description":"","headers":[{"id":"pair_f14710d91904436580b1f7604abcb154","name":"Content-Type","value":"application/json"}],"isPrivate":false,"metaSortKey":-1584785952454,"method":"PUT","modified":1584786369717,"name":"Insert user","parameters":[],"parentId":"wrk_64a9a75ebeb742afb675b1f89c58b839","settingDisableRenderRequestBody":false,"settingEncodeUrl":true,"settingFollowRedirects":"global","settingRebuildPath":true,"settingSendCookies":true,"settingStoreCookies":true,"url":"http://localhost:8080/api/users/6e93a3fd-ad93-469f-8ca1-ad132d18ab7b","_type":"request"},{"_id":"env_f250c4b18ce4e5a497613b19eaa4e9d7f5f1cba0","color":null,"created":1584785919954,"data":{},"dataPropertyOrder":null,"isPrivate":false,"metaSortKey":1584785919954,"modified":1584785919954,"name":"Base Environment","parentId":"wrk_64a9a75ebeb742afb675b1f89c58b839","_type":"environment"},{"_id":"jar_f250c4b18ce4e5a497613b19eaa4e9d7f5f1cba0","cookies":[],"created":1584785919956,"modified":1584785919956,"name":"Default Jar","parentId":"wrk_64a9a75ebeb742afb675b1f89c58b839","_type":"cookie_jar"}]}
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2020-04-07T07:49:56.834Z",
+  "__export_source": "insomnia.desktop.app:v7.1.1",
+  "resources": [
+    {
+      "_id": "req_12a7a667c37641779ab82d53558cfbf6",
+      "authentication": {},
+      "body": {},
+      "created": 1586239891137,
+      "description": "",
+      "headers": [
+        {
+          "description": "",
+          "id": "pair_d7a77d0bc52e49e3a55988c68efee288",
+          "name": "Authorization",
+          "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGVzIjpbIkFETUlOIl0sImV4cCI6MTU4NzEwMzkyNn0.eQ_6HurY2ZtyUG3z2uYqSz1hyLMF3MZqnMiwYi1eqBVEcw-YUb29ClxsNd0sKhsaXneuybUijwU_abh8BoCG4Q"
+        }
+      ],
+      "isPrivate": false,
+      "metaSortKey": -1586239891138,
+      "method": "GET",
+      "modified": 1586239942941,
+      "name": "Get Me",
+      "parameters": [],
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingFollowRedirects": "global",
+      "settingRebuildPath": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true,
+      "url": "http://localhost:8080/api/users/me",
+      "_type": "request"
+    },
+    {
+      "_id": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "created": 1584785919918,
+      "description": "",
+      "modified": 1586193830734,
+      "name": "spring jwt",
+      "parentId": null,
+      "_type": "workspace"
+    },
+    {
+      "_id": "req_6c3882ec4a5a4bb4818ac4d4ba4a18e6",
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"username\": \"sign_up\",\n\t\"dateOfBirth\": \"1943-11-29\",\n\t\"email\": \"user_to_sign_up@fakemail.com\",\n\t\"rawPassword\": \"my_p@ssw0rd\"\n}"
+      },
+      "created": 1585745922417,
+      "description": "",
+      "headers": [
+        {
+          "id": "pair_00d0b880a8284965a30b86e10b55ffd1",
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "isPrivate": false,
+      "metaSortKey": -1585745922417,
+      "method": "POST",
+      "modified": 1585746225474,
+      "name": "Sign-up",
+      "parameters": [],
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingFollowRedirects": "global",
+      "settingRebuildPath": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true,
+      "url": "http://localhost:8080/api/users/sign-up",
+      "_type": "request"
+    },
+    {
+      "_id": "req_aff5d758bef84d02ad5d6c0b1348b861",
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"username\": \"admin\",\n\t\"password\": \">2b37.eR539:!%5h\"\n}"
+      },
+      "created": 1585721253920,
+      "description": "",
+      "headers": [
+        {
+          "id": "pair_2ecc42a23c384038885f3936c13117a9",
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "isPrivate": false,
+      "metaSortKey": -1585721253920,
+      "method": "POST",
+      "modified": 1586193870025,
+      "name": "login",
+      "parameters": [],
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingFollowRedirects": "global",
+      "settingRebuildPath": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true,
+      "url": "http://localhost:8080/login",
+      "_type": "request"
+    },
+    {
+      "_id": "req_137a0819791d491b9f3594eb1c2b2e42",
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"username\": \"my_username2\",\n\t\"dateOfBirth\": \"1980-11-18\",\n\t\"email\": \"my@fakemail.com\"\n}"
+      },
+      "created": 1584786406943,
+      "description": "",
+      "headers": [
+        {
+          "id": "pair_6c1707f3e43f472a9915a9ad5ffddd8e",
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "isPrivate": false,
+      "metaSortKey": -1584786406943,
+      "method": "POST",
+      "modified": 1584786442692,
+      "name": "Create user",
+      "parameters": [],
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingFollowRedirects": "global",
+      "settingRebuildPath": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true,
+      "url": "http://localhost:8080/api/users",
+      "_type": "request"
+    },
+    {
+      "_id": "req_309f4f2baa8d4b6295081805e4959b59",
+      "authentication": {},
+      "body": {},
+      "created": 1584786352214,
+      "description": "",
+      "headers": [],
+      "isPrivate": false,
+      "metaSortKey": -1584786352214,
+      "method": "GET",
+      "modified": 1584786393195,
+      "name": "Get user",
+      "parameters": [],
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingFollowRedirects": "global",
+      "settingRebuildPath": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true,
+      "url": "http://localhost:8080/api/users/6e93a3fd-ad93-469f-8ca1-ad132d18ab7b",
+      "_type": "request"
+    },
+    {
+      "_id": "req_4a5233caee654a17986ecf6ce35f8984",
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"username\": \"my_username\",\n\t\"dateOfBirth\": \"1980-11-18\",\n\t\"email\": \"my@fakemail.com\",\n\t\"roles\": [\"USER\"]\n}"
+      },
+      "created": 1584785952454,
+      "description": "",
+      "headers": [
+        {
+          "id": "pair_f14710d91904436580b1f7604abcb154",
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "description": "",
+          "id": "pair_a92664fdc2bf4521a45d02cd26f7c0bb",
+          "name": "Authorization",
+          "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGVzIjpbIkFETUlOIl0sImV4cCI6MTU4NzA1ODAyN30.0SxfZdpiEQiKU0Kp055cCw1abZhvzgB5VMGD7G5-FcdsEDcFmT-wLj1T9ksDbo6wkr42x46xfGHhZ1b_3ROlag"
+        }
+      ],
+      "isPrivate": false,
+      "metaSortKey": -1584785952454,
+      "method": "PUT",
+      "modified": 1586194079856,
+      "name": "Insert user",
+      "parameters": [],
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingFollowRedirects": "global",
+      "settingRebuildPath": true,
+      "settingSendCookies": true,
+      "settingStoreCookies": true,
+      "url": "http://localhost:8080/api/users/6e93a3fd-ad93-469f-8ca1-ad132d18ab7b",
+      "_type": "request"
+    },
+    {
+      "_id": "env_f250c4b18ce4e5a497613b19eaa4e9d7f5f1cba0",
+      "color": null,
+      "created": 1584785919954,
+      "data": {},
+      "dataPropertyOrder": null,
+      "isPrivate": false,
+      "metaSortKey": 1584785919954,
+      "modified": 1584785919954,
+      "name": "Base Environment",
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "_type": "environment"
+    },
+    {
+      "_id": "jar_f250c4b18ce4e5a497613b19eaa4e9d7f5f1cba0",
+      "cookies": [],
+      "created": 1584785919956,
+      "modified": 1584785919956,
+      "name": "Default Jar",
+      "parentId": "wrk_64a9a75ebeb742afb675b1f89c58b839",
+      "_type": "cookie_jar"
+    }
+  ]
+}

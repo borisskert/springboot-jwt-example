@@ -1,6 +1,7 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
-import de.borisskert.springjwt.persistence.UserEntity;
+import de.borisskert.springjwt.ApplicationProperties;
+import de.borisskert.springjwt.user.persistence.UserEntity;
 import de.borisskert.springjwt.vaidation.Username;
 
 import javax.validation.constraints.Email;

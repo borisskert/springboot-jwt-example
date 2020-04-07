@@ -1,6 +1,6 @@
-package de.borisskert.springjwt.authentication;
+package de.borisskert.springjwt.authentication.userdetails;
 
-import de.borisskert.springjwt.persistence.UserRepository;
+import de.borisskert.springjwt.user.persistence.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

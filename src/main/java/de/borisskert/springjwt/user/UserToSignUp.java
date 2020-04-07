@@ -1,6 +1,6 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
-import de.borisskert.springjwt.persistence.UserEntity;
+import de.borisskert.springjwt.user.persistence.UserEntity;
 import de.borisskert.springjwt.vaidation.RawPassword;
 import de.borisskert.springjwt.vaidation.Username;
 

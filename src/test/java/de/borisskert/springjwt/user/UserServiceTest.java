@@ -1,4 +1,4 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

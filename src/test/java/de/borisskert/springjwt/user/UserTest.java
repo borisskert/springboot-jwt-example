@@ -1,6 +1,8 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
-import de.borisskert.springjwt.persistence.UserEntity;
+import de.borisskert.springjwt.user.persistence.UserEntity;
+import de.borisskert.springjwt.user.User;
+import de.borisskert.springjwt.user.UserWithPassword;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

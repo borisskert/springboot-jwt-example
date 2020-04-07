@@ -1,9 +1,9 @@
 package de.borisskert.springjwt.authentication;
 
 import de.borisskert.springjwt.ApplicationProperties;
-import de.borisskert.springjwt.User;
-import de.borisskert.springjwt.UserService;
-import de.borisskert.springjwt.UserWithPassword;
+import de.borisskert.springjwt.user.User;
+import de.borisskert.springjwt.user.UserService;
+import de.borisskert.springjwt.user.UserWithPassword;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

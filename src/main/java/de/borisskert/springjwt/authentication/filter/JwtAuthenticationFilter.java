@@ -1,4 +1,4 @@
-package de.borisskert.springjwt.filter;
+package de.borisskert.springjwt.authentication.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.borisskert.springjwt.authentication.JwtTokenService;

@@ -1,4 +1,4 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
 import de.borisskert.springjwt.authentication.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,15 +24,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static de.borisskert.springjwt.MockUsers.NOT_EXISTING_ID;
-import static de.borisskert.springjwt.MockUsers.USER_ID_TO_INSERT;
-import static de.borisskert.springjwt.MockUsers.USER_ONE;
-import static de.borisskert.springjwt.MockUsers.USER_ONE_ID;
-import static de.borisskert.springjwt.MockUsers.USER_TO_CREATE;
-import static de.borisskert.springjwt.MockUsers.USER_TO_INSERT;
-import static de.borisskert.springjwt.MockUsers.USER_TO_SIGN_UP_AS_MAP;
-import static de.borisskert.springjwt.MockUsers.USER_WITH_DUPLICATE_USERNAME;
-import static de.borisskert.springjwt.MockUsers.VALID_PASSWORD;
+import static de.borisskert.springjwt.user.MockUsers.NOT_EXISTING_ID;
+import static de.borisskert.springjwt.user.MockUsers.USER_ID_TO_INSERT;
+import static de.borisskert.springjwt.user.MockUsers.USER_ONE;
+import static de.borisskert.springjwt.user.MockUsers.USER_ONE_ID;
+import static de.borisskert.springjwt.user.MockUsers.USER_TO_CREATE;
+import static de.borisskert.springjwt.user.MockUsers.USER_TO_INSERT;
+import static de.borisskert.springjwt.user.MockUsers.USER_TO_SIGN_UP_AS_MAP;
+import static de.borisskert.springjwt.user.MockUsers.USER_WITH_DUPLICATE_USERNAME;
+import static de.borisskert.springjwt.user.MockUsers.VALID_PASSWORD;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;

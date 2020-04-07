@@ -1,6 +1,8 @@
-package de.borisskert.springjwt.authentication;
+package de.borisskert.springjwt.authentication.userdetails;
 
 import de.borisskert.springjwt.ApplicationProperties;
+import de.borisskert.springjwt.authentication.AdminAccountCreation;
+import de.borisskert.springjwt.authentication.userdetails.RepositoryUserDetailsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

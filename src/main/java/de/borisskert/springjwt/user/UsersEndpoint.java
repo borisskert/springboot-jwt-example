@@ -1,4 +1,4 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
 import de.borisskert.springjwt.vaidation.Username;
 import de.borisskert.springjwt.vaidation.Uuid;

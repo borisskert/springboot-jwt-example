@@ -1,4 +1,4 @@
-package de.borisskert.springjwt.persistence;
+package de.borisskert.springjwt.user.persistence;
 
 import javax.persistence.Convert;
 import javax.persistence.Entity;

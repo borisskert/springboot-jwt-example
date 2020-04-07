@@ -1,4 +1,4 @@
-package de.borisskert.springjwt.filter;
+package de.borisskert.springjwt.authentication.filter;
 
 import de.borisskert.springjwt.authentication.JwtTokenService;
 import org.springframework.security.authentication.AuthenticationManager;

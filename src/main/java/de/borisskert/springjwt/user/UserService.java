@@ -1,7 +1,7 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
 
-import de.borisskert.springjwt.persistence.UserEntity;
-import de.borisskert.springjwt.persistence.UserRepository;
+import de.borisskert.springjwt.user.persistence.UserEntity;
+import de.borisskert.springjwt.user.persistence.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

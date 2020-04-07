@@ -1,4 +1,7 @@
-package de.borisskert.springjwt;
+package de.borisskert.springjwt.user;
+
+import de.borisskert.springjwt.user.User;
+import de.borisskert.springjwt.user.UserToSignUp;
 
 import java.time.LocalDate;
 import java.util.Map;

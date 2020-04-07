@@ -1,6 +1,6 @@
 package de.borisskert.springjwt.authentication;
 
-import de.borisskert.springjwt.FakeUserDetails;
+import de.borisskert.springjwt.user.FakeUserDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -1,4 +1,4 @@
-package de.borisskert.springjwt.persistence;
+package de.borisskert.springjwt.user.persistence;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

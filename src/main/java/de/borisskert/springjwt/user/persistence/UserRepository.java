@@ -1,4 +1,4 @@
-package de.borisskert.springjwt.persistence;
+package de.borisskert.springjwt.user.persistence;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;

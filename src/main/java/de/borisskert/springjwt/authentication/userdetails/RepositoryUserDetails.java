@@ -1,6 +1,6 @@
-package de.borisskert.springjwt.authentication;
+package de.borisskert.springjwt.authentication.userdetails;
 
-import de.borisskert.springjwt.persistence.UserEntity;
+import de.borisskert.springjwt.user.persistence.UserEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -31,13 +31,13 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
             HttpServletResponse response,
             FilterChain chain
     ) throws IOException, ServletException {
-        Authentication authentication = getAuthentication(request);
+        Authentication authentication = extractAuthentication(request);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         chain.doFilter(request, response);
     }
 
-    private Authentication getAuthentication(HttpServletRequest request) {
+    private Authentication extractAuthentication(HttpServletRequest request) {
         String headerValue = request.getHeader(HEADER_KEY);
         return Optional.ofNullable(headerValue)
                 .map(this::toAuthenticationToken)

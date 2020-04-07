@@ -69,6 +69,9 @@ class UsersEndpointTest {
     private UserService userService;
 
     @MockBean
+    private MeService meService;
+
+    @MockBean
     private JwtTokenService jwtTokenService;
 
     @BeforeEach
@@ -262,7 +265,7 @@ class UsersEndpointTest {
     }
 
     @Nested
-    class GetMy {
+    class GetMe {
 
         private User myUser;
 
@@ -274,7 +277,7 @@ class UsersEndpointTest {
                     LocalDate.of(1989, 11, 8),
                     List.of("USER", "ADMIN")
             );
-            when(userService.getMyUser()).thenReturn(myUser);
+            when(meService.getMe()).thenReturn(Optional.of(myUser));
         }
 
         @Test
@@ -304,8 +307,42 @@ class UsersEndpointTest {
             return requestWithAdminRights(API_USERS_URL + "/me", HttpMethod.GET, null, User.class);
         }
 
+        private ResponseEntity<Void> tryToGetMyUserWithAdminPermissions() {
+            return requestWithAdminRights(API_USERS_URL + "/me", HttpMethod.GET, null, Void.class);
+        }
+
         private ResponseEntity<User> getMyUserWithUserPermissions() {
             return requestWithUserRights(API_USERS_URL + "/me", HttpMethod.GET, null, User.class);
+        }
+
+        @Nested
+        class NotFound {
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(meService);
+                when(meService.getMe()).thenReturn(Optional.empty());
+            }
+
+            @Test
+            public void shouldAllowToGetMyUserWithAdminPermissions() throws Exception {
+                ResponseEntity<Void> response = tryToGetMyUserWithAdminPermissions();
+
+                assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+            }
+
+            @Test
+            public void shouldAllowToGetMyUserWithUserPermissions() throws Exception {
+                ResponseEntity<Void> response = tryToGetMyUserWithAdminPermissions();
+
+                assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+            }
+
+            @Test
+            public void shouldNotAllowToGetMyUserWithoutPermissions() throws Exception {
+                ResponseEntity<Void> response = restTemplate.getForEntity(API_USERS_URL + "/me", Void.class);
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
         }
     }
 

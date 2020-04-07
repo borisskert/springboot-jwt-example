@@ -101,4 +101,11 @@ public class UsersClient {
     public void signUp(UserWithPassword user) {
         httpClient.post(API_USERS_URL + "/sign-up", user);
     }
+
+    public void getMe() {
+        authenticationClient.getAuthorization()
+                .ifPresent(authentication -> httpClient.addHeader(AuthenticationClient.AUTHORIZATION_HEADER, authentication));
+
+        httpClient.get(API_USERS_URL + "/me");
+    }
 }

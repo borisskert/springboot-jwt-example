@@ -23,42 +23,45 @@ import java.util.Collection;
 @Validated
 public class UsersEndpoint {
 
-    private final UserService service;
+    private final UserService userService;
+    private final MeService meService;
 
     @Autowired
-    public UsersEndpoint(UserService service) {
-        this.service = service;
+    public UsersEndpoint(UserService userService, MeService meService) {
+        this.userService = userService;
+        this.meService = meService;
     }
 
     @GetMapping
     public ResponseEntity<Collection<User>> getUsers() {
-        Collection<User> allUsers = service.getAllUsers();
+        Collection<User> allUsers = userService.getAllUsers();
         return ResponseEntity.ok(allUsers);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable @Uuid String id) {
-        return service.getUserById(id)
+        return userService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping(params = "username")
     public ResponseEntity<?> findByUsername(@RequestParam @Username String username) {
-        return service.findByUsername(username)
+        return userService.findByUsername(username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/me")
     public ResponseEntity<User> getMyUser() {
-        User myUser = service.getMyUser();
-        return ResponseEntity.ok(myUser);
+        return meService.getMe()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody @Valid User user) {
-        String createdId = service.create(user);
+        String createdId = userService.create(user);
 
         return ResponseEntity.created(URI.create("/api/users/" + createdId))
                 .build();
@@ -66,12 +69,12 @@ public class UsersEndpoint {
 
     @PutMapping("/{id}")
     public void insert(@PathVariable @Uuid String id, @RequestBody @Valid User user) {
-        service.insert(id, user);
+        userService.insert(id, user);
     }
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> signUp(@RequestBody @Valid UserToSignUp newUserWithPassword) {
-        String createdId = service.signUp(newUserWithPassword);
+        String createdId = userService.signUp(newUserWithPassword);
 
         return ResponseEntity.created(URI.create("/api/users/" + createdId))
                 .build();

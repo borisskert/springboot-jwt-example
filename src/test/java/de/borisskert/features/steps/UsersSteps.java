@@ -122,4 +122,9 @@ public class UsersSteps {
     public Credentials defineCredentials(Map<String, String> entry) {
         return Credentials.from(entry);
     }
+
+    @When("I ask for me")
+    public void iAskForMe() {
+        usersClient.getMe();
+    }
 }

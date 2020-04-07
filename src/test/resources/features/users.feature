@@ -82,3 +82,9 @@ Feature: User functionalities
       | Username   | Email                      | Day of Birth   | Password    |
       | Buu1eeVu   | Buu1eeVu@fakemail.com      | 1989-10-18     | my_p@ssw0rd |
     Then I get a Conflict response
+
+  Scenario: Get me
+    When I ask for me
+    Then I should get following user
+      | Username   | Email                      | Day of Birth   | Roles |
+      | admin      | admin@localhost            | 1970-01-01     | ADMIN |

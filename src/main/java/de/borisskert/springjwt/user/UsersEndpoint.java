@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -78,5 +79,11 @@ public class UsersEndpoint {
 
         return ResponseEntity.created(URI.create("/api/users/" + createdId))
                 .build();
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<?> patch(@PathVariable @Uuid String userId, @RequestBody @Valid UserPatch patch) {
+        userService.patch(userId, patch);
+        return ResponseEntity.noContent().build();
     }
 }

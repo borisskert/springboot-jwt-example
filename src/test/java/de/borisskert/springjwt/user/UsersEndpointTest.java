@@ -1,6 +1,10 @@
 package de.borisskert.springjwt.user;
 
 import de.borisskert.springjwt.authentication.JwtTokenService;
+import de.borisskert.springjwt.user.exception.UserAlreadyExistsException;
+import de.borisskert.springjwt.user.exception.UserNotFoundException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,9 +17,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -24,14 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static de.borisskert.springjwt.user.MockUsers.NOT_EXISTING_ID;
-import static de.borisskert.springjwt.user.MockUsers.USER_ID_TO_INSERT;
 import static de.borisskert.springjwt.user.MockUsers.USER_ONE;
 import static de.borisskert.springjwt.user.MockUsers.USER_ONE_ID;
-import static de.borisskert.springjwt.user.MockUsers.USER_TO_CREATE;
-import static de.borisskert.springjwt.user.MockUsers.USER_TO_INSERT;
-import static de.borisskert.springjwt.user.MockUsers.USER_TO_SIGN_UP_AS_MAP;
-import static de.borisskert.springjwt.user.MockUsers.USER_WITH_DUPLICATE_USERNAME;
 import static de.borisskert.springjwt.user.MockUsers.VALID_PASSWORD;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -47,6 +47,7 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
@@ -56,8 +57,6 @@ class UsersEndpointTest {
     private static final ParameterizedTypeReference<List<User>> USER_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
 
-    private static final String CREATED_USER_ID = "777";
-    private static final String SIGN_UP_USER_ID = "555";
     private static final String API_USERS_URL = "/api/users";
     private static final String ADMIN_TOKEN_VALUE = "MY_ADMIN_TOKEN_VALUE";
     private static final String USER_TOKEN_VALUE = "MY_USER_TOKEN_VALUE";
@@ -76,17 +75,6 @@ class UsersEndpointTest {
 
     @BeforeEach
     public void setup() throws Exception {
-        when(userService.getUserById(USER_ONE_ID)).thenReturn(Optional.of(USER_ONE));
-        when(userService.findByUsername("my_username")).thenReturn(Optional.of(USER_ONE));
-
-        when(userService.getUserById(NOT_EXISTING_ID)).thenReturn(Optional.empty());
-
-        when(userService.create(USER_TO_CREATE)).thenReturn(CREATED_USER_ID);
-
-        when(userService.create(eq(USER_WITH_DUPLICATE_USERNAME))).thenThrow(new UserAlreadyExistsException("Username 'duplicate' already exists"));
-        doThrow(new UserAlreadyExistsException("Username 'duplicate' already exists"))
-                .when(userService).insert(any(), eq(USER_WITH_DUPLICATE_USERNAME));
-
         UsernamePasswordAuthenticationToken adminAuthentication = new UsernamePasswordAuthenticationToken(
                 "admin",
                 null,
@@ -106,38 +94,78 @@ class UsersEndpointTest {
 
     @Nested
     class GetById {
-        @Test
-        public void shouldRetrieveUserById() throws Exception {
-            ResponseEntity<User> response = getUserByIdWithAdminRights(USER_ONE_ID);
 
-            assertThat(response.getStatusCode(), is(equalTo(OK)));
-            assertThat(response.getBody(), is(equalTo(USER_ONE)));
+        @Nested
+        class Found {
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+                when(userService.getUserById(USER_ONE_ID)).thenReturn(Optional.of(USER_ONE));
+            }
+
+            @Test
+            public void shouldRetrieveUserById() throws Exception {
+                ResponseEntity<User> response = getUserByIdWithAdminRights(USER_ONE_ID);
+
+                assertThat(response.getStatusCode(), is(equalTo(OK)));
+                assertThat(response.getBody(), is(equalTo(USER_ONE)));
+            }
+
+            @Test
+            public void shouldNotAllowFindUserByIdWithUserRights() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByIdWithUserRights(USER_ONE_ID);
+
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAllowFindUserByIdWithoutRights() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL + "/" + USER_ONE_ID,
+                        HttpMethod.GET,
+                        null,
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
         }
 
-        @Test
-        public void shouldNotFindWithUnknownId() throws Exception {
-            ResponseEntity<Void> response = tryToGetUserByIdWithAdminRights(NOT_EXISTING_ID);
+        @Nested
+        class NotFound {
+            private static final String NOT_EXISTING_ID = "9b686071-2973-4001-b0f9-6267422d45f7";
 
-            assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
-        }
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+                when(userService.getUserById(NOT_EXISTING_ID)).thenReturn(Optional.empty());
+            }
 
-        @Test
-        public void shouldNotAllowFindUserByIdWithUserRights() throws Exception {
-            ResponseEntity<Void> response = tryToGetUserByIdWithUserRights(USER_ONE_ID);
+            @Test
+            public void shouldNotFindWithUnknownId() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByIdWithAdminRights(NOT_EXISTING_ID);
 
-            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
-        }
+                assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+            }
 
-        @Test
-        public void shouldNotAllowFindUserByIdWithoutRights() throws Exception {
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ONE_ID,
-                    HttpMethod.GET,
-                    null,
-                    Void.class
-            );
+            @Test
+            public void shouldNotAllowFindUserByIdWithUserRights() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByIdWithUserRights(USER_ONE_ID);
 
-            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAllowFindUserByIdWithoutRights() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL + "/" + USER_ONE_ID,
+                        HttpMethod.GET,
+                        null,
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
         }
 
         private ResponseEntity<User> getUserByIdWithAdminRights(String id) {
@@ -155,52 +183,95 @@ class UsersEndpointTest {
 
     @Nested
     class GetByUsername {
-        @Test
-        public void shouldFindUserByUsername() throws Exception {
-            ResponseEntity<User> response = getUserByUsernameWithAdminRights("my_username");
+        private static final String USERNAME = "my_username";
 
-            assertThat(response.getStatusCode(), is(equalTo(OK)));
-            assertThat(response.getBody(), is(equalTo(USER_ONE)));
+        @Nested
+        class Found {
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+                when(userService.findByUsername(USERNAME)).thenReturn(Optional.of(USER_ONE));
+            }
+
+            @Test
+            public void shouldFindUserByUsername() throws Exception {
+                ResponseEntity<User> response = getUserByUsernameWithAdminRights(USERNAME);
+
+                assertThat(response.getStatusCode(), is(equalTo(OK)));
+                assertThat(response.getBody(), is(equalTo(USER_ONE)));
+            }
+
+            @Test
+            public void shouldNotAcceptUserPermissions() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByUsernameWithUserRights(USERNAME);
+
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAcceptUnauthorized() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL + "?username=" + USERNAME,
+                        HttpMethod.GET,
+                        null,
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
         }
 
-        @Test
-        public void shouldNotFindUserByUnknownUsername() throws Exception {
-            ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("h4xx0r");
+        @Nested
+        class NotFound {
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+                when(userService.findByUsername(USERNAME)).thenReturn(Optional.empty());
+            }
 
-            assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+            @Test
+            public void shouldNotFindUserByUnknownUsername() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("h4xx0r");
+
+                assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+            }
+
+            @Test
+            public void shouldNotAcceptUserPermissions() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByUsernameWithUserRights(USERNAME);
+
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAcceptUnauthorized() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL + "?username=" + USERNAME,
+                        HttpMethod.GET,
+                        null,
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
         }
 
-        @Test
-        public void shouldNotAcceptTooShortUsername() throws Exception {
-            ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("ccc");
+        @Nested
+        class InvalidUsername {
 
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
+            @Test
+            public void shouldNotAcceptTooShortUsername() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("ccc");
 
-        @Test
-        public void shouldNotAcceptTooLongUsername() throws Exception {
-            ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("mycrazyusernamewhichistolong");
+                assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+            }
 
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
+            @Test
+            public void shouldNotAcceptTooLongUsername() throws Exception {
+                ResponseEntity<Void> response = tryToGetUserByUsernameWithAdminRights("mycrazyusernamewhichistolong");
 
-        @Test
-        public void shouldNotAcceptUserPermissions() throws Exception {
-            ResponseEntity<Void> response = tryToGetUserByUsernameWithUserRights("my_username");
-
-            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
-        }
-
-        @Test
-        public void shouldNotAcceptUnauthorized() throws Exception {
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "?username=my_username",
-                    HttpMethod.GET,
-                    null,
-                    Void.class
-            );
-
-            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+            }
         }
 
         private ResponseEntity<User> getUserByUsernameWithAdminRights(String username) {
@@ -348,200 +419,890 @@ class UsersEndpointTest {
 
     @Nested
     class Post {
-        @Test
-        public void shouldCreateUser() throws Exception {
-            ResponseEntity<Void> response = createUserWithAdminRights(USER_TO_CREATE);
+        private Map<String, Object> userToCreate;
 
-            assertThat(response.getStatusCode(), is(equalTo(CREATED)));
-            assertThat(response.getHeaders().get("Location").get(0), is(equalTo("/api/users/777")));
+        @Nested
+        class CorrectBody {
+            private static final String CREATED_USER_ID = "31bde056-7e55-49c5-a8b2-04da6109bd16";
+
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+
+                userToCreate = Map.of(
+                        "username", "my_username",
+                        "email", "my@fakemail.com",
+                        "dateOfBirth", "1945-05-08",
+                        "roles", List.of("USER")
+                );
+
+                when(userService.create(any(User.class))).thenReturn(CREATED_USER_ID);
+            }
+
+            @Test
+            public void shouldCreateUser() throws Exception {
+                ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+
+                assertThat(response.getStatusCode(), is(equalTo(CREATED)));
+                assertThat(response.getHeaders().get("Location").get(0), is(equalTo("/api/users/31bde056-7e55-49c5-a8b2-04da6109bd16")));
+            }
+
+            @Test
+            public void shouldNotAllowRequestWithUserPermissions() throws Exception {
+                ResponseEntity<Void> response = createUserWithUserRights(userToCreate);
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL,
+                        HttpMethod.POST,
+                        new HttpEntity<>(userToCreate),
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
         }
 
-        @Test
-        public void shouldNotAllowUserWithoutUsername() throws Exception {
-            User userToCreate = User.from(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
+        @Nested
+        class DuplicateUsername {
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
 
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                userToCreate = Map.of(
+                        "username", "my_username",
+                        "email", "my@fakemail.com",
+                        "dateOfBirth", "1945-05-08",
+                        "roles", List.of("USER")
+                );
+
+                when(userService.create(any(User.class))).thenThrow(new UserAlreadyExistsException("Username 'my_username' already exists"));
+            }
+
+            @Test
+            public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
+                ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+            }
         }
 
-        @Test
-        public void shouldNotAllowUserWithTooShortUsername() throws Exception {
-            User userToCreate = User.from("short", "my@fakemail.com", LocalDate.of(1944, 7, 20));
+        @Nested
+        class Invalid {
+            @Nested
+            class InvalidUsername {
+                @Test
+                public void shouldNotAllowUserWithoutUsername() throws Exception {
+                    userToCreate = Map.of(
+                            "email", "my@fakemail.com",
+                            "dateOfBirth", "1945-05-08",
+                            "roles", List.of("USER")
+                    );
 
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowUserWithTooShortUsername() throws Exception {
+                    userToCreate = Map.of(
+                            "username", "short",
+                            "email", "my@fakemail.com",
+                            "dateOfBirth", "1945-05-08",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowUserWithTooLongUsername() throws Exception {
+
+                    userToCreate = Map.of(
+                            "username", "tooooooo_long",
+                            "email", "my@fakemail.com",
+                            "dateOfBirth", "1945-05-08",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+            }
+
+            @Nested
+            class InvalidEmail {
+                @Test
+                public void shouldNotAllowUserWithoutEmail() throws Exception {
+                    userToCreate = Map.of(
+                            "username", "my_username",
+                            "dateOfBirth", "1945-05-08",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowUserWithIllegalEmail() throws Exception {
+                    userToCreate = Map.of(
+                            "username", "my_username",
+                            "email", "not a email",
+                            "dateOfBirth", "1945-05-08",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+            }
+
+            @Nested
+            class InvalidDateOfBirth {
+                @Test
+                public void shouldNotAllowUserWithoutBirthDate() throws Exception {
+                    userToCreate = Map.of(
+                            "username", "my_username",
+                            "email", "my@fakemail.com",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
+                    userToCreate = Map.of(
+                            "username", "my_username",
+                            "email", "my@fakemail.com",
+                            "dateOfBirth", LocalDate.now().plusYears(1).format(DateTimeFormatter.ISO_DATE),
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+            }
         }
 
-        @Test
-        public void shouldNotAllowUserWithTooLongUsername() throws Exception {
-            User userToCreate = User.from("tooooooo_long", "my@fakemail.com", LocalDate.of(1944, 7, 20));
-
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithoutEmail() throws Exception {
-            User userToCreate = User.from("my_username", null, LocalDate.of(1944, 7, 20));
-
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithIllegalEmail() throws Exception {
-            User userToCreate = User.from("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
-
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithoutBirthDate() throws Exception {
-            User userToCreate = User.from("my_username", "my@fakemail.com", null);
-
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
-            User userToCreate = User.from("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
-
-            ResponseEntity<Void> response = createUserWithAdminRights(userToCreate);
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
-            ResponseEntity<Void> response = createUserWithAdminRights(USER_WITH_DUPLICATE_USERNAME);
-            assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
-        }
-
-        @Test
-        public void shouldNotAllowRequestWithUserPermissions() throws Exception {
-            ResponseEntity<Void> response = createUserWithUserRights(USER_TO_INSERT);
-            assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
-        }
-
-        @Test
-        public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
-                    HttpMethod.PUT,
-                    new HttpEntity<>(USER_TO_INSERT),
-                    Void.class
-            );
-
-            assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
-        }
-
-        private ResponseEntity<Void> createUserWithAdminRights(User user) {
+        private ResponseEntity<Void> createUserWithAdminRights(Map<String, Object> user) {
             return requestWithAdminRights(API_USERS_URL, HttpMethod.POST, user, Void.class);
         }
 
-        private ResponseEntity<Void> createUserWithUserRights(User user) {
+        private ResponseEntity<Void> createUserWithUserRights(Map<String, Object> user) {
             return requestWithUserRights(API_USERS_URL, HttpMethod.POST, user, Void.class);
         }
     }
 
     @Nested
     class Put {
-        @Test
-        public void shouldInsertUser() throws Exception {
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, USER_TO_INSERT);
+        private static final String VALID_USER_ID = "d67c5afa-96a4-4fea-a9ea-221448ea5b68";
 
-            assertThat(response.getStatusCode(), is(equalTo(OK)));
+        private Map<String, Object> userToInsert;
+
+        @BeforeEach
+        public void setup() throws Exception {
+            userToInsert = Map.of(
+                    "username", "my_username",
+                    "email", "user@fakemail.com",
+                    "dateOfBirth", "1948-06-21",
+                    "roles", List.of("USER")
+            );
         }
 
-        @Test
-        public void shouldNotAllowToInsertUserWithIllegalId() throws Exception {
-            ResponseEntity<Void> response = insertUserWithAdminRights("444", USER_TO_INSERT);
+        @Nested
+        class Successful {
 
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+            }
+
+            @Test
+            public void shouldInsertUser() throws Exception {
+                ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, userToInsert);
+
+                assertThat(response.getStatusCode(), is(equalTo(OK)));
+            }
         }
 
-        @Test
-        public void shouldNotAllowUserWithoutUsername() throws Exception {
-            User userToCreate = User.from(null, "my@fakemail.com", LocalDate.of(1944, 7, 20));
+        @Nested
+        class IllegalUserId {
+            @Test
+            public void shouldNotAllowToInsertUserWithIllegalId() throws Exception {
+                ResponseEntity<Void> response = insertUserWithAdminRights("444", userToInsert);
 
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
-
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+            }
         }
 
-        @Test
-        public void shouldNotAllowUserWithoutEmail() throws Exception {
-            User userToCreate = User.from("my_username", null, LocalDate.of(1944, 7, 20));
+        @Nested
+        class InvalidUser {
+            private Map<String, Object> invalidUserToInsert;
 
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
+            @Nested
+            class InvalidUsername {
+                @Test
+                public void shouldNotAllowUserWithoutUsername() throws Exception {
+                    invalidUserToInsert = Map.of(
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1948-06-21",
+                            "roles", List.of("USER")
+                    );
 
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                    ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, invalidUserToInsert);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+            }
+
+            @Nested
+            class InvalidEmail {
+                @Test
+                public void shouldNotAllowUserWithoutEmail() throws Exception {
+                    invalidUserToInsert = Map.of(
+                            "username", "my_username",
+                            "dateOfBirth", "1948-06-21",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, invalidUserToInsert);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowUserWithIllegalEmail() throws Exception {
+                    invalidUserToInsert = Map.of(
+                            "username", "my_username",
+                            "email", "not_a_email",
+                            "dateOfBirth", "1948-06-21",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, invalidUserToInsert);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+            }
+
+            @Nested
+            class InvalidDateOfBirth {
+                @Test
+                public void shouldNotAllowUserWithoutBirthDate() throws Exception {
+                    invalidUserToInsert = Map.of(
+                            "username", "my_username",
+                            "email", "not_a_email",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, invalidUserToInsert);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
+                    invalidUserToInsert = Map.of(
+                            "username", "my_username",
+                            "email", "not_a_email",
+                            "dateOfBirth", "not a birth date",
+                            "roles", List.of("USER")
+                    );
+
+                    ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, invalidUserToInsert);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+            }
         }
 
-        @Test
-        public void shouldNotAllowUserWithIllegalEmail() throws Exception {
-            User userToCreate = User.from("my_username", "not_a_email", LocalDate.of(1944, 7, 20));
+        @Nested
+        class DuplicateUsername {
 
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
 
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
+                doThrow(new UserAlreadyExistsException("Username 'duplicate' already exists"))
+                        .when(userService).insert(eq(VALID_USER_ID), any());
+            }
 
-        @Test
-        public void shouldNotAllowUserWithoutBirthDate() throws Exception {
-            User userToCreate = User.from("my_username", "my@fakemail.com", null);
-
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
-
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithIllegalBirthDate() throws Exception {
-            User userToCreate = User.from("my_username", "my@fakemail.com", LocalDate.now().plusYears(1));
-
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, userToCreate);
-
-            assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
-        }
-
-        @Test
-        public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
-            ResponseEntity<Void> response = insertUserWithAdminRights(USER_ID_TO_INSERT, USER_WITH_DUPLICATE_USERNAME);
-            assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+            @Test
+            public void shouldNotAllowUserWithDuplicateUsername() throws Exception {
+                ResponseEntity<Void> response = insertUserWithAdminRights(VALID_USER_ID, userToInsert);
+                assertThat(response.getStatusCode(), is(equalTo(CONFLICT)));
+            }
         }
 
         @Test
         public void shouldNotAllowRequestWithUserPermissions() throws Exception {
-            ResponseEntity<Void> response = insertUserWithUserRights(USER_ID_TO_INSERT, USER_TO_INSERT);
+            ResponseEntity<Void> response = insertUserWithUserRights(VALID_USER_ID, userToInsert);
             assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
         }
 
         @Test
         public void shouldNotAllowRequestWithoutAuthentication() throws Exception {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    API_USERS_URL + "/" + USER_ID_TO_INSERT,
+                    API_USERS_URL + "/" + VALID_USER_ID,
                     HttpMethod.PUT,
-                    new HttpEntity<>(USER_TO_INSERT),
+                    new HttpEntity<>(userToInsert),
                     Void.class
             );
 
             assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
         }
 
-        private ResponseEntity<Void> insertUserWithAdminRights(String id, User user) {
+        private ResponseEntity<Void> insertUserWithAdminRights(String id, Map<String, Object> user) {
             return requestWithAdminRights(API_USERS_URL + "/" + id, HttpMethod.PUT, user, Void.class);
         }
 
-        private ResponseEntity<Void> insertUserWithUserRights(String id, User user) {
+        private ResponseEntity<Void> insertUserWithUserRights(String id, Map<String, Object> user) {
             return requestWithUserRights(API_USERS_URL + "/" + id, HttpMethod.PUT, user, Void.class);
+        }
+    }
+
+    @Nested
+    class Patch {
+
+        private RestTemplate patchRestTemplate;
+
+        @BeforeEach
+        public void setup() throws Exception {
+            patchRestTemplate = createPatchRestTemplate();
+        }
+
+        @Nested
+        class Successful {
+            private static final String USER_ID = "2884a717-5a17-49fa-84cc-d4321207c7f9";
+
+            @Nested
+            class FullPatch {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    reset(userService);
+
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldAllowPatchUserWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(NO_CONTENT)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class UsernameOnly {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldAllowPatchUserWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(NO_CONTENT)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class EmailOnly {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldAllowPatchUserWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(NO_CONTENT)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class DateOfBirthOnly {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldAllowPatchUserWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(NO_CONTENT)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class RolesOnly {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    reset(userService);
+
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldAllowPatchUserWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(NO_CONTENT)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+        }
+
+        @Nested
+        class UserNotFound {
+            private static final String USER_ID = "2884a717-5a17-49fa-84cc-d4321207c7f9";
+            private Map<String, Object> patch;
+
+            @BeforeEach
+            public void setup() throws Exception {
+                reset(userService);
+
+                patch = Map.of(
+                        "username", "my_username",
+                        "email", "user@fakemail.com",
+                        "dateOfBirth", "1990-10-03",
+                        "roles", List.of("USER")
+                );
+
+                doThrow(new UserNotFoundException("User with id '2884a717-5a17-49fa-84cc-d4321207c7f9' not found"))
+                        .when(userService).patch(eq(USER_ID), any());
+            }
+
+            @Test
+            public void shouldAllowPatchUserWithAdminPermissions() throws Exception {
+                ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                assertThat(response.getStatusCode(), is(equalTo(NOT_FOUND)));
+            }
+
+            @Test
+            public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL + "/" + USER_ID,
+                        HttpMethod.PATCH,
+                        new HttpEntity<>(patch),
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
+        }
+
+        @Nested
+        class InvalidUserId {
+            private static final String USER_ID = "abc";
+            private Map<String, Object> patch;
+
+            @BeforeEach
+            public void setup() throws Exception {
+                patch = Map.of(
+                        "username", "my_username",
+                        "email", "user@fakemail.com",
+                        "dateOfBirth", "1990-10-03",
+                        "roles", List.of("USER")
+                );
+            }
+
+            @Test
+            public void shouldNotAllowPatchUserByInvalidUserIdWithAdminPermissions() throws Exception {
+                ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+            }
+
+            @Test
+            public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+            }
+
+            @Test
+            public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                ResponseEntity<Void> response = restTemplate.exchange(
+                        API_USERS_URL + "/" + USER_ID,
+                        HttpMethod.PATCH,
+                        new HttpEntity<>(patch),
+                        Void.class
+                );
+
+                assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+            }
+        }
+
+        @Nested
+        class InvalidUserPatch {
+            private static final String USER_ID = "2884a717-5a17-49fa-84cc-d4321207c7f9";
+
+            @Nested
+            class InvalidUsername {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "abc",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldNotAllowPatchUserByInvalidUserIdWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class InvalidEmail {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "not a mail",
+                            "dateOfBirth", "1990-10-03",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldNotAllowPatchUserByInvalidUserIdWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class InvalidDate {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "not a date",
+                            "roles", List.of("USER")
+                    );
+                }
+
+                @Test
+                public void shouldNotAllowPatchUserByInvalidUserIdWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+
+            @Nested
+            class InvalidRoles {
+                private Map<String, Object> patch;
+
+                @BeforeEach
+                public void setup() throws Exception {
+                    patch = Map.of(
+                            "username", "my_username",
+                            "email", "user@fakemail.com",
+                            "dateOfBirth", "not a date",
+                            "roles", "not a list"
+                    );
+                }
+
+                @Test
+                public void shouldNotAllowPatchUserByInvalidUserIdWithAdminPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithAdminRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithUserPermissions() throws Exception {
+                    ResponseEntity<Void> response = patchUserWithUserRights(USER_ID, patch);
+
+                    assertThat(response.getStatusCode(), is(equalTo(FORBIDDEN)));
+                }
+
+                @Test
+                public void shouldNotAllowToPatchUserWithoutPermissions() throws Exception {
+                    ResponseEntity<Void> response = restTemplate.exchange(
+                            API_USERS_URL + "/" + USER_ID,
+                            HttpMethod.PATCH,
+                            new HttpEntity<>(patch),
+                            Void.class
+                    );
+
+                    assertThat(response.getStatusCode(), is(equalTo(UNAUTHORIZED)));
+                }
+            }
+        }
+
+        private ResponseEntity<Void> patchUserWithAdminRights(String userId, Map<String, Object> userPatch) {
+            return requestWithAdminRights(API_USERS_URL + "/" + userId, HttpMethod.PATCH, userPatch, Void.class);
+        }
+
+        private ResponseEntity<Void> patchUserWithUserRights(String userId, Map<String, Object> userPatch) {
+            return requestWithUserRights(API_USERS_URL + "/" + userId, HttpMethod.PATCH, userPatch, Void.class);
+        }
+
+        private <T> ResponseEntity<T> requestWithAdminRights(String url, HttpMethod method, Object body, Class<T> responseType) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Bearer " + ADMIN_TOKEN_VALUE);
+
+            HttpEntity<Object> httpEntity = new HttpEntity<>(body, headers);
+
+            return restTemplate.exchange(url, method, httpEntity, responseType);
+        }
+
+        private <T> ResponseEntity<T> requestWithUserRights(String url, HttpMethod method, Object body, Class<T> responseType) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", "Bearer " + USER_TOKEN_VALUE);
+
+            HttpEntity<Object> httpEntity = new HttpEntity<>(body, headers);
+
+            return patchRestTemplate.exchange(url, method, httpEntity, responseType);
+        }
+
+        private RestTemplate createPatchRestTemplate() {
+            RestTemplate patchRestTemplate = restTemplate.getRestTemplate();
+
+            HttpClient httpClient = HttpClientBuilder.create().build();
+            HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+
+            patchRestTemplate.setRequestFactory(requestFactory);
+
+            return patchRestTemplate;
         }
     }
 
     @Nested
     class SignUp {
         private static final String API_USERS_SIGN_UP_URL = "/api/users/sign-up";
+        private static final String SIGN_UP_USER_ID = "555";
+
+        private Map<String, Object> userToSignUp;
+
+        @BeforeEach
+        public void setup() throws Exception {
+            userToSignUp = Map.of(
+                    "username", "sign_up2",
+                    "email", "user_to_sign_up@fakemail.com",
+                    "dateOfBirth", "1943-11-29",
+                    "rawPassword", VALID_PASSWORD
+            );
+        }
 
         @Nested
         class Successful {
@@ -553,7 +1314,7 @@ class UsersEndpointTest {
 
             @Test
             public void shouldSignUpNewUser() throws Exception {
-                ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, USER_TO_SIGN_UP_AS_MAP, Void.class);
+                ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, userToSignUp, Void.class);
 
                 assertThat(response.getStatusCode(), is(equalTo(CREATED)));
                 assertThat(response.getHeaders().get("Location").get(0), is(equalTo("/api/users/" + SIGN_UP_USER_ID)));

@@ -1,4 +1,4 @@
-package de.borisskert.springjwt.user;
+package de.borisskert.springjwt.user.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

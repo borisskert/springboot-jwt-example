@@ -105,6 +105,17 @@
             <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- ======================================================================================================= -->
+        <!-- Make HTTP PATCH calls -->
+        <!-- ======================================================================================================= -->
+        
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

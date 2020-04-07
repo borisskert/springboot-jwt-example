@@ -1,5 +1,6 @@
 package de.borisskert.springjwt.user;
 
+import de.borisskert.springjwt.user.exception.UserAlreadyExistsException;
 import de.borisskert.springjwt.user.persistence.UserEntity;
 import de.borisskert.springjwt.user.persistence.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,5 +111,9 @@ public class UserService {
 
     public User getMyUser() {
         return null;
+    }
+
+    public void patch(String userId, UserPatch patch) {
+
     }
 }

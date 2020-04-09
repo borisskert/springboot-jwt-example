@@ -1,6 +1,6 @@
 package de.borisskert.springjwt.authentication.filter;
 
-import de.borisskert.springjwt.authentication.JwtTokenService;
+import de.borisskert.springjwt.authentication.jwt.JwtTokenService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,13 +40,13 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
     private Authentication extractAuthentication(HttpServletRequest request) {
         String headerValue = request.getHeader(HEADER_KEY);
         return Optional.ofNullable(headerValue)
-                .map(this::toAuthenticationToken)
+                .flatMap(this::toAuthenticationToken)
                 .orElse(null);
     }
 
-    private Authentication toAuthenticationToken(String headerValue) {
+    private Optional<Authentication> toAuthenticationToken(String headerValue) {
         String tokenValue = extractToken(headerValue);
-        return jwtTokenService.authenticate(tokenValue);
+        return jwtTokenService.tryToAuthenticate(tokenValue);
     }
 
     private String extractToken(String headerValue) {

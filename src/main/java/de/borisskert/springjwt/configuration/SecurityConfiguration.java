@@ -2,10 +2,10 @@ package de.borisskert.springjwt.configuration;
 
 import com.auth0.spring.security.api.JwtWebSecurityConfigurer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.borisskert.springjwt.authentication.JwtTokenService;
-import de.borisskert.springjwt.authentication.userdetails.RepositoryUserDetailsService;
 import de.borisskert.springjwt.authentication.filter.JwtAuthenticationFilter;
 import de.borisskert.springjwt.authentication.filter.JwtAuthorizationFilter;
+import de.borisskert.springjwt.authentication.jwt.JwtTokenService;
+import de.borisskert.springjwt.authentication.userdetails.RepositoryUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

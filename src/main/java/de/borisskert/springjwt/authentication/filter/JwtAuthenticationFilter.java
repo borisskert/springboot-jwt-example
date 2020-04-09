@@ -1,8 +1,8 @@
 package de.borisskert.springjwt.authentication.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.borisskert.springjwt.authentication.JwtTokenService;
 import de.borisskert.springjwt.authentication.SecurityConstants;
+import de.borisskert.springjwt.authentication.jwt.JwtTokenService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

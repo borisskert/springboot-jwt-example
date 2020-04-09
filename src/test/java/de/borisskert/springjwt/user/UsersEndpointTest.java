@@ -1,10 +1,12 @@
 package de.borisskert.springjwt.user;
 
-import de.borisskert.springjwt.authentication.JwtTokenService;
+import de.borisskert.springjwt.authentication.jwt.JwtTokenService;
 import de.borisskert.springjwt.user.exception.UserAlreadyExistsException;
 import de.borisskert.springjwt.user.exception.UserNotFoundException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
@@ -52,7 +55,7 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@DirtiesContext
+@ActiveProfiles("IT")
 class UsersEndpointTest {
     private static final ParameterizedTypeReference<List<User>> USER_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
@@ -81,7 +84,7 @@ class UsersEndpointTest {
                 Set.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );
 
-        when(jwtTokenService.authenticate(ADMIN_TOKEN_VALUE)).thenReturn(adminAuthentication);
+        when(jwtTokenService.tryToAuthenticate(ADMIN_TOKEN_VALUE)).thenReturn(Optional.of(adminAuthentication));
 
         UsernamePasswordAuthenticationToken userAuthentication = new UsernamePasswordAuthenticationToken(
                 "user",
@@ -89,7 +92,7 @@ class UsersEndpointTest {
                 Set.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
 
-        when(jwtTokenService.authenticate(USER_TOKEN_VALUE)).thenReturn(userAuthentication);
+        when(jwtTokenService.tryToAuthenticate(USER_TOKEN_VALUE)).thenReturn(Optional.of(userAuthentication));
     }
 
     @Nested
@@ -1496,6 +1499,11 @@ class UsersEndpointTest {
             ResponseEntity<Void> response = restTemplate.postForEntity(API_USERS_SIGN_UP_URL, withoutBirthDate, Void.class);
             assertThat(response.getStatusCode(), is(equalTo(BAD_REQUEST)));
         }
+    }
+
+    @AfterEach
+    public void cleanup() {
+        reset(userService, meService, jwtTokenService);
     }
 
     private <T> ResponseEntity<T> requestWithAdminRights(String url, HttpMethod method, Object body, Class<T> responseType) {

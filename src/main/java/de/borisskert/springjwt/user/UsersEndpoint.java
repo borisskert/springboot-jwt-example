@@ -54,7 +54,7 @@ public class UsersEndpoint {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getMyUser() {
+    public ResponseEntity<User> getMe() {
         return meService.getMe()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

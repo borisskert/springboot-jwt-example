@@ -18,3 +18,7 @@ app:
   admins:
     - username: admin
       password: admin123
+  security:
+    issuer: http://my.app
+    audience: my.app
+    secret: my super special secret

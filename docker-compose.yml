@@ -1,0 +1,36 @@
+version: '3.1'
+
+services:
+  spring-jwt:
+    image: local/spring-jwt:latest
+    build:
+      context: .
+    environment:
+      app_security_issuer: http://localhost:8080
+      app_security_audience: http://localhost:8080
+      app_security_secret: Heeng6EeahN6ko4w
+      spring_datasource_url: jdbc:postgresql://db:5432/mydb?currentSchema=public
+      spring_datasource_username: myuser
+      spring_datasource_password: mypassword
+      spring_datasource_platform: password
+      spring_profiles_active: postgres
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      mynetwork:
+
+  db:
+    image: postgres:12.3
+    environment:
+       POSTGRES_USER: myuser
+       POSTGRES_PASSWORD: mypassword
+       POSTGRES_DB: mydb
+    volumes:
+      - .psql-data:/var/lib/postgresql/data
+    networks:
+      mynetwork:
+
+networks:
+  mynetwork:

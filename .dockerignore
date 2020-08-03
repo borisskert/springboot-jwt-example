@@ -1,0 +1,9 @@
+.idea/
+.git/
+.github/
+target/
+.tmp/
+*.iml
+.dockerignore
+Dockerfile
+.psql-data/

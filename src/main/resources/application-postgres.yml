@@ -1,0 +1,8 @@
+spring:
+  jpa:
+    # https://stackoverflow.com/a/49261146
+    properties.hibernate.jdbc.lob.non_contextual_creation: true
+    open-in-view: false
+
+    # https://stackoverflow.com/a/40364487
+    properties.hibernate.default_schema: public

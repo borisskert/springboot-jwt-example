@@ -1,0 +1,14 @@
+spring:
+  profiles:
+    include: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydb?currentSchema=public
+    username: myuser
+    password: mypassword
+    platform: postgres
+
+app:
+  security:
+    issuer: http://localhost:8080
+    audience: http://localhost:8080
+    secret: Heeng6EeahN6ko4w

@@ -8,4 +8,4 @@ databaseChangeLog:
             columns:
               - column:
                   name: roles
-                  type: longtext
+                  type: varchar(1024)

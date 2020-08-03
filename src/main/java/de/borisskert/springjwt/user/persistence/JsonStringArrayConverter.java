@@ -6,15 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.AttributeConverter;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.IOException;
-import java.io.Reader;
-import java.sql.Clob;
-import java.sql.SQLException;
 import java.util.Collection;
 
 @Component
-public class JsonStringArrayConverter implements AttributeConverter<Collection<String>, Clob> {
+public class JsonStringArrayConverter implements AttributeConverter<Collection<String>, String> {
     private static final TypeReference<Collection<String>> STRING_COLLECTION_TYPE = new TypeReference<>() {
     };
 
@@ -25,21 +21,19 @@ public class JsonStringArrayConverter implements AttributeConverter<Collection<S
     }
 
     @Override
-    public Clob convertToDatabaseColumn(Collection<String> attribute) {
+    public String convertToDatabaseColumn(Collection<String> attribute) {
         try {
-            String jsonString = json.writeValueAsString(attribute);
-            return new SerialClob(jsonString.toCharArray());
-        } catch (JsonProcessingException | SQLException e) {
+            return json.writeValueAsString(attribute);
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Collection<String> convertToEntityAttribute(Clob dbData) {
+    public Collection<String> convertToEntityAttribute(String dbData) {
         try {
-            Reader characterStream = dbData.getCharacterStream();
-            return json.readValue(characterStream, STRING_COLLECTION_TYPE);
-        } catch (IOException | SQLException e) {
+            return json.readValue(dbData, STRING_COLLECTION_TYPE);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

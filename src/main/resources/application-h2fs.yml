@@ -1,6 +1,12 @@
 spring:
   datasource:
-    url: jdbc:h2:file:./tmp/h2.db
+    url: jdbc:h2:file:./.tmp/h2.db
     driverClassName: org.h2.Driver
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+
+app:
+  security:
+    issuer: http://localhost:8080
+    audience: http://localhost:8080
+    secret: Heeng6EeahN6ko4w
